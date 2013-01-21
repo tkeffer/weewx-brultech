@@ -1,0 +1,6 @@
+Python wrapper that calculates time-dependent quantities.
+
+Some way around the TCP Time out, other than having to set
+it up on the GEM webpage.
+
+Calculations suitable for the oil furnace.

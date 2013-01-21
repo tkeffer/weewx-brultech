@@ -1,0 +1,132 @@
+#errorCatcher Echo
+##    $Revision: 783 $
+##    $Author: tkeffer $
+##    $Date: 2013-01-01 17:44:05 -0800 (Tue, 01 Jan 2013) $
+#encoding UTF-8
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head profile="http://www.w3.org/2005/10/profile">
+    #if $encoding == 'utf8'
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    #end if    
+    <title>$station.location Energy Consumption</title>
+    <link rel="stylesheet" type="text/css" href="weewx.css"/>
+    <link rel="icon" type="image/png" href="favicon.ico" />
+  </head>
+
+  <body>
+    <div id="container">
+      <div id="masthead">
+        <h1>$station.location</h1>
+        <h2>Energy Consumption</h2>
+          <h2>$current.dateTime</h2>
+      </div>
+
+      <div id="stats_group">
+
+        <div class="stats">
+          <div class="stats_header">
+            Power
+          </div>
+
+          <table>
+            <tbody>
+              <tr>
+                <td class="stats_label">Total power consumption</td>
+                <td class="stats_data">$current.ch8_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Dryer</td>
+                <td class="stats_data">$current.ch1_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Basement subpanel</td>
+                <td class="stats_data">$current.ch2_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">tk office</td>
+                <td class="stats_data">$current.ch3_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Sub-zero fridge</td>
+                <td class="stats_data">$current.ch4_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot water heater</td>
+                <td class="stats_data">$current.ch5_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot tub</td>
+                <td class="stats_data">$current.ch6_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Upstairs subpanel</td>
+                <td class="stats_data">$current.ch7_w.nolabel("%.1f") W</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Oil furnace</td>
+                <td class="stats_data">$current.ch16_w.nolabel("%.1f") W</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+
+        <p>&nbsp;</p>
+
+
+      </div> <!--End class "stats_group" -->
+
+      <div id="content">
+        <div id="about">
+          <div class="header">
+            About this energy monitor:
+          </div>
+          <table>
+            <caption class="caption">Location</caption>
+            <tr>
+              <td class="label">Latitude:</td>
+              <td class="data">$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
+            </tr>
+            <tr>
+              <td class="label">Longitude:</td>
+              <td class="data">$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
+            </tr>
+            <tr>
+              <td class="label">Altitude:</td>
+              <td class="data">$station.altitude</td>
+            </tr>
+          </table>
+
+        <div id="plots">
+          <img src="daych8.png"/>
+          <img src="daych1.png"/>
+          <img src="daych2.png"/>
+          <img src="daych3.png"/>
+          <img src="daych4.png"/>
+          <img src="daych5.png"/>
+          <img src="daych6.png"/>
+          <img src="daych7.png"/>
+          <img src="daych16.png"/>
+        </div> <!-- End id "plots" -->
+      </div> <!-- End id "content" -->
+
+    </div>
+
+    ## Include the Google Analytics code if the user has supplied an ID:
+    #if $Extras.has_key('googleAnalyticsId')
+    <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+        try{
+            var pageTracker = _gat._getTracker("$Extras.googleAnalyticsId");
+            pageTracker._trackPageview();
+        } catch(err) {}
+    </script>
+    #end if
+
+</body>
+
+</html>
