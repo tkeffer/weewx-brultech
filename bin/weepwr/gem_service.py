@@ -30,6 +30,24 @@ class GEMAccum(weewx.accum.BaseAccum):
             else:
                 self._add_value(record[obs_type], obs_type, record['dateTime'])
             
+    def getRecord(self):
+        """Extract a record out of the results in the accumulator.
+        
+        This is a GEM-specific version. """
+        # All records have a timestamp and unit type
+        record = {'dateTime': self.timespan.stop,
+                  'usUnits' : self.unit_system}
+        # Go through all observation types.
+        for obs_type in self:
+            if obs_type.endswith('_aws') or obs_type.endswith('_wh'):
+                record[obs_type] = self[obs_type].last
+            elif obs_type.endswith('_dwh') or obs_type.endswith('_nwh') or obs_type.endswith('_pwh'):
+                record[obs_type] = self[obs_type].sum
+            else:
+                # For everything else, we want the average:
+                record[obs_type] = self[obs_type].avg
+        return record
+
 class GEMArchive(weewx.wxengine.StdArchive):
     
     def _new_accumulator(self, timestamp):
