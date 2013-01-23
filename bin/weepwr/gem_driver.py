@@ -382,7 +382,7 @@ class GEMBase(object):
             self._calc_pe(tag, ds, ret, prev)
 
         # Add the interval time:
-        ret['interval'] = ds
+        ret['interval'] = ds / 60.0
         return ret
 
 class GEM48PBinary(GEMBase):
