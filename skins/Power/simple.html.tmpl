@@ -26,13 +26,13 @@
 
         <div class="stats">
           <div class="stats_header">
-            Power
+            Power Usage
           </div>
 
           <table>
             <tbody>
               <tr>
-                <td class="stats_label">Total power consumption</td>
+                <td class="stats_label">Total power usage</td>
                 <td class="stats_data">$current.ch8_w.nolabel("%.1f") W</td>
               </tr>
               <tr>
@@ -71,9 +71,56 @@
           </table>
         </div>
 
-
         <p>&nbsp;</p>
 
+        <div class="stats">
+          <div class="stats_header">
+            Since Midnight
+          </div>
+
+          <table>
+            <tbody>
+              <tr>
+                <td class="stats_label">Total power usage</td>
+                <td class="stats_data">$day.ch8_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Dryer</td>
+                <td class="stats_data">$day.ch1_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Basement subpanel</td>
+                <td class="stats_data">$day.ch2_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">tk office</td>
+                <td class="stats_data">$day.ch3_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Sub-zero fridge</td>
+                <td class="stats_data">$day.ch4_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot water heater</td>
+                <td class="stats_data">$day.ch5_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot tub</td>
+                <td class="stats_data">$day.ch6_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Upstairs subpanel</td>
+                <td class="stats_data">$day.ch7_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Oil furnace</td>
+                <td class="stats_data">$day.ch16_dwh.sum.nolabel("%.0f") Wh</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>&nbsp;</p>
 
       </div> <!--End class "stats_group" -->
 
