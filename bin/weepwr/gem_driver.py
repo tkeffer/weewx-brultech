@@ -3,7 +3,52 @@
 #
 #    See the file LICENSE.txt for your full rights.
 #
-"""Classes and functions for interfacing with the Brultech GEM home energy monitor."""
+"""Classes and functions for interfacing with the Brultech GEM home energy monitor.
+
+What follows is from notes from Matthew Wall:
+
+These are 'hard data', i.e. things we get from the device:
+
+    secs - seconds counter from the gem.  Monotonically increasing counter.  Wraparound at 256^3.  Increments once per second.
+    aws - absolute watt-seconds.  Monotonically increasing counter.  Wraparound at 256^5.
+    pws - polarized watt-seconds.  Monotonically increasing counter.  Wraparound at 256^5.  pws is always less than or equal to aws.
+    volts - voltage
+    t - temperature in degrees C
+
+There is no notion of None.  We can infer it for t if we get a value of 255.5.  For other channels there is no way to know whether a CT or pulse counter is attached.
+
+These are all derived quantities:
+
+    w - net watts.  Calculated from packets n and n-1.
+    wh - cumulative net watt-hours.  Calculated from packet n.
+    dwh - delta watt-hours.  Difference between reading n and n-1.
+    nw - negative watts.  Power generated.  Calculated from packets n and n-1.
+    pw - positive watts.  Power consumed.  Calculated form packets n and n-1.
+    nwh - negative watt-hours.  Energy generated.
+    pwh - positive watt-hours.  Energy consumed.
+
+Note that the meaning of positive/negative depend on:
+- orientation of the ct
+- per-channel polarity setting on the gem
+- white/black wire positions in the gem wiring connectors
+
+These are the calculations:
+
+    seconds = sec_counter1 - sec_counter0
+    w1 = (abs_ws1 - abs_ws0) / seconds    # if pos_ws1 == 0 multiply by -1
+    pos_w1 = (pol_ws1 - pol_ws0) / seconds
+    neg_w1 = ((abs_ws1 - abs_ws0) - (pol_ws1 - pol_ws0)) / seconds
+    pos_wh1 = pol_ws1 / 3600
+    neg_wh1 = (abs_ws1 - pol_ws1) / 3600
+    wh1 = pos_wh1 - neg_wh1               # same as (2*pws1 - aws1) / 3600
+    delta_wh1 = wh1 - wh0
+
+When polarity is reversed, use the following:
+
+    neg_wh1 = pol_ws1 / 3600
+    pos_wh1 = (abs_ws1 - pol_ws1) / 3600
+    wh1 = (aws1 - 2*pws1) / 3600
+"""
 import calendar
 import time
 try:
