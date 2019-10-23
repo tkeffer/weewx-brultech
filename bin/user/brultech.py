@@ -19,6 +19,7 @@ From Matthew Wall: these are 'hard data', i.e. things we get from the device:
 There is no notion of None.  We can infer it for t if we get a value of 255.5.  For other channels there is no way to know whether a CT or pulse counter is attached.
 """
 from __future__ import print_function, with_statement
+
 import calendar
 import logging
 import time
@@ -344,6 +345,7 @@ class GEMBin48Net(BTBase):
     def _extract_packet_from(self, byte_buf):
         packet = {
             'dateTime': int(time.time() + 0.5),
+            'usUnits': weewx.METRICWX,
             'volts': float(extract_short(byte_buf[3:5])) / 10.0,
             'ser_no': extract_short(byte_buf[485:487]),
             'unit_id': byte_buf[488],
@@ -434,12 +436,17 @@ class Brultech(weewx.drivers.AbstractDevice):
         self.source.write_with_response(b"^^^SYSOFF", b"OFF\r\n")
         # This turns off the "keep-alive" feature
         self.source.write_with_response(b"^^^SYSKAI0", b"OK\r\n")
+        # This sets the temperature units to Celsius. Not sure about response on this one...
+        self.source.write_with_response(b'^^^TMPDGC', b'OK\r\n')
         # Let the packet type set things up:
         self.packet_obj.setup()
 
     @property
     def hardware_name(self):
         return "Brultech"
+
+    def closePort(self):
+        self.source.close()
 
     def genLoopPackets(self):
         """Generator function that returns packets."""
@@ -450,6 +457,8 @@ class Brultech(weewx.drivers.AbstractDevice):
             time.sleep(self.poll_interval)
 
     def setTime(self):
+        """Set the time"""
+
         # Unfortunately, clock resolution is only 1 second, and transmission takes a
         # little while to complete, so round up the clock up. 0.5 for clock resolution
         # and 0.25 for transmission delay. Also, the Brultech uses UTC.
@@ -482,7 +491,8 @@ def source_factory(source_name, bt_dict):
 if __name__ == '__main__':
     from weeutil.weeutil import timestamp_to_string
     import weeutil.logger
-    weewx.debug=2
+
+    weewx.debug = 2
 
     weeutil.logger.setup('brultech', {})
 
