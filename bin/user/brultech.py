@@ -23,7 +23,7 @@ from __future__ import print_function, with_statement
 import calendar
 import logging
 import time
-from functools import reduce
+import struct
 
 try:
     # Python 3
@@ -321,11 +321,14 @@ class GEMBin48Net(BTBase):
         packet = {
             'dateTime': int(time.time() + 0.5),
             'usUnits': weewx.METRICWX,
-            'volts': float(extract_short(byte_buf[3:5])) / 10.0,
-            'ser_no': extract_short(byte_buf[485:487]),
+            'v1_volt': float(struct.unpack('>H', byte_buf[3:5])[0]) / 10.0,
+            'ser_no': struct.unpack('>H', byte_buf[485:487])[0],
             'unit_id': byte_buf[488],
             'secs': unpack(byte_buf[585:588])
             }
+
+        # Form the full, formatted serial number:
+        packet['serial'] = '%03d%05d' % (packet['unit_id'], packet['ser_no'])
 
         # Extract absolute watt-seconds:
         aws = extract_seq(byte_buf[5:], 32, 5, 'ch%d_a_energy')
@@ -335,8 +338,12 @@ class GEMBin48Net(BTBase):
         pws = extract_seq(byte_buf[245:], 32, 5, 'ch%d_p_energy')
         packet.update(pws)
 
-        # Form the full, formatted serial number:
-        packet['serial'] = '%03d%05d' % (packet['unit_id'], packet['ser_no'])
+        # Extract current:
+        current = extract_seq(byte_buf[489:], 32, 2, 'ch%d_amp')
+        # Divide by 50, as per GEM manual
+        for x in current:
+            current[x] /= 50.0
+        packet.update(current)
 
         # Extract pulses:
         pulse = extract_seq(byte_buf[588:], 4, 3, 'p%d_count')
@@ -414,8 +421,9 @@ class Brultech(weewx.drivers.AbstractDevice):
         self.source.write_with_response(b"^^^SYSOFF", b"OFF\r\n")
         # This turns off the "keep-alive" feature
         self.source.write_with_response(b"^^^SYSKAI0", b"OK\r\n")
-        # This sets the temperature units to Celsius. Not sure about response on this one...
-        self.source.write_with_response(b'^^^TMPDGC', b'OK\r\n')
+        # This sets the temperature units to Celsius.
+        self.source.write_with_response(b'^^^TMPDGC', b'C')
+
         # Let the packet type set things up:
         self.packet_obj.setup()
 
@@ -479,11 +487,6 @@ def unpack(a):
     return sum
 
 
-def extract_short(buf):
-    v = (buf[0] << 8) + buf[1]
-    return v
-
-
 def extract_seq(buf, N, nbyte, tag):
     results = {}
     for i in range(N):
@@ -524,7 +527,7 @@ if __name__ == '__main__':
     device.setTime()
 
     for packet in device.genLoopPackets():
-        print(timestamp_to_string(packet['dateTime']), timestamp_to_string(packet['time_created']), packet['volts'])
+        print(packet)
         #
         # for key in packet:
         #     if key.startswith('ch8'):
