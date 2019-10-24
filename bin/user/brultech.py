@@ -114,6 +114,13 @@ class BaseConnection(object):
     def read(self, chars=1, max_tries=3):
         raise NotImplementedError()
 
+    def read_with_prompt(self, prompt, n):
+        """Write a prompt, then wait for a response. """
+        self.write(prompt)
+        time.sleep(self.send_delay)
+        byte_buf = self.read(n)
+        return byte_buf
+
     def write(self, data):
         raise NotImplementedError()
 
@@ -207,7 +214,7 @@ class SocketConnection(BaseConnection):
         import socket
         attempt = 0
         buf = bytearray()
-        remaining = chars
+        remaining = chars or 4096
         while remaining > 0:
             attempt += 1
             if attempt > max_tries:
@@ -219,6 +226,8 @@ class SocketConnection(BaseConnection):
                 raise weewx.WeeWxIOError(ex)
             log.debug("Received %d bytes" % len(recv))
             buf.extend(recv)
+            if not chars:
+                break
             remaining -= len(buf)
         return buf
 
@@ -231,29 +240,6 @@ class SocketConnection(BaseConnection):
             log.error("Socket write error. %s", ex)
             # Reraise as a WeeWX error:
             raise weewx.WeeWxIOError(ex)
-
-
-# ===============================================================================
-#                            Packet Utilities
-# ===============================================================================
-
-def unpack(a):
-    """Unpack a value from a byte array, little endian order."""
-    s = reduce(lambda s, x: s + x[1] * (1 << (8 * x[0])), enumerate(a), 0)
-    return s
-
-
-def extract_short(buf):
-    v = (buf[0] << 8) + buf[1]
-    return v
-
-
-def extract_seq(buf, N, nbyte, tag):
-    results = {}
-    for i in range(N):
-        x = unpack(buf[i * nbyte:i * nbyte + nbyte])
-        results[tag % (i + 1)] = x
-    return results
 
 
 # ===============================================================================
@@ -288,11 +274,8 @@ class BTBase(object):
 
     def get_packet(self):
 
-        # Request a single packet:
-        self.source.write(b'^^^APISPK')
-
-        # ... get a bytebuffer as a response...
-        byte_buf = self.source.read(self.packet_length)
+        # Request a single packet...
+        byte_buf = self.source.read_with_prompt(b'^^^APISPK', self.packet_length)
 
         # ... check it for integrity ...
         self._check_ends(byte_buf)
@@ -323,14 +306,6 @@ class BTBase(object):
         if self.packet_ID != buf[2]:
             raise weewx.WeeWxIOError("Bad packet ID. Got %d, expected %d" % (buf[2], self.packet_ID))
 
-    # Adapted from btmon.py:
-    @staticmethod
-    def _calc_secs(oldpkt, newpkt):
-        ds = newpkt['secs'] - oldpkt['secs']
-        if newpkt['secs'] < oldpkt['secs']:
-            ds += BTBase.SEC_COUNTER_MAX
-        return ds
-
 
 class GEMBin48Net(BTBase):
     """Implement the GEM BIN48-NET (format #5) packet"""
@@ -353,23 +328,26 @@ class GEMBin48Net(BTBase):
             }
 
         # Extract absolute watt-seconds:
-        aws = extract_seq(byte_buf[5:], 32, 5, 'ch%d_aws')
+        aws = extract_seq(byte_buf[5:], 32, 5, 'ch%d_a_energy')
         packet.update(aws)
 
         # Extract polarized watt-seconds:
-        pws = extract_seq(byte_buf[245:], 32, 5, 'ch%d_pws')
+        pws = extract_seq(byte_buf[245:], 32, 5, 'ch%d_p_energy')
         packet.update(pws)
 
         # Form the full, formatted serial number:
         packet['serial'] = '%03d%05d' % (packet['unit_id'], packet['ser_no'])
 
         # Extract pulses:
-        pulse = extract_seq(byte_buf[588:], 4, 3, 'pulse%d')
+        pulse = extract_seq(byte_buf[588:], 4, 3, 'p%d_count')
         packet.update(pulse)
 
         # Extract temperatures:
-        temperature = extract_seq(byte_buf[600:], 8, 2, 'extraTemp%d')
-        packet.update(temperature)
+        for i in range(8):
+            t = _mktemperature(byte_buf[600 + 2 * i:])
+            # Ignore any out of range temperatures; keep the rest
+            if abs(t) <= 255:
+                packet['t%d_temperature' % (i + 1)] = t
 
         return packet
 
@@ -486,6 +464,52 @@ def source_factory(source_name, bt_dict):
         return SocketConnection(host=host, port=port, send_delay=send_delay, timeout=timeout)
     else:
         raise weewx.ViolatedPrecondition("Unknown connection type %s" % source_name)
+
+
+# ===============================================================================
+#                            Packet Utilities
+# ===============================================================================
+
+def unpack(a):
+    """Unpack a value from a byte array, little endian order."""
+    sum = 0
+    for b in a[::-1]:
+        sum <<= 8
+        sum += b
+    return sum
+
+
+def extract_short(buf):
+    v = (buf[0] << 8) + buf[1]
+    return v
+
+
+def extract_seq(buf, N, nbyte, tag):
+    results = {}
+    for i in range(N):
+        x = unpack(buf[i * nbyte:i * nbyte + nbyte])
+        results[tag % (i + 1)] = x
+    return results
+
+
+# Adapted from btmon.py
+def _mktemperature(b):
+    # firmware 1.61 and older use this for temperature
+    #        t = 0.5 * self._convert(b)
+
+    # firmware later than 1.61 uses this for temperature
+    t = 0.5 * ((b[1] & 0x7f) << 8 | b[0])
+    if (b[1] >> 7) != 0:
+        t = -t
+    return t
+
+
+# Adapted from btmon.py:
+def _calc_secs(oldpkt, newpkt):
+    ds = newpkt['secs'] - oldpkt['secs']
+    if newpkt['secs'] < oldpkt['secs']:
+        ds += BTBase.SEC_COUNTER_MAX
+    return ds
 
 
 if __name__ == '__main__':
