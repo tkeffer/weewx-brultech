@@ -38,7 +38,8 @@ Insert a stanza into your weewx.conf file that looks like:
 
     # See the install instructions for how to configure the Brultech devices!!
     
-    # The type of packet to use:
+    # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
+    # or GEMAscii:
     packet_type = GEMBin48NetTime
     
     # The type of connection to use. It should match a section below. 

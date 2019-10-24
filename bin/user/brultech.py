@@ -6,17 +6,7 @@
 """Classes and functions for interfacing with the Brultech energy monitors.
 
 A simplifying assumption is that the Brultech device is always in server mode,
-and the driver only polls it. See README.md for instructions for setting up the device.
-
-From Matthew Wall: these are 'hard data', i.e. things we get from the device:
-
-    secs - seconds counter from the gem.  Monotonically increasing counter.  Wraparound at 256^3.  Increments once per second.
-    aws - absolute watt-seconds.  Monotonically increasing counter.  Wraparound at 256^5.
-    pws - polarized watt-seconds.  Monotonically increasing counter.  Wraparound at 256^5.  pws is always less than or equal to aws.
-    volts - voltage
-    t - temperature in degrees C
-
-There is no notion of None.  We can infer it for t if we get a value of 255.5.  For other channels there is no way to know whether a CT or pulse counter is attached.
+and the driver only polls it. See README.md for instructions on how to set up the device.
 """
 from __future__ import print_function, with_statement
 
@@ -48,7 +38,8 @@ DEFAULTS_INI = u"""
 
     # See the install instructions for how to configure the Brultech devices!!
     
-    # The type of packet to use:
+    # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
+    # or GEMAscii:
     packet_type = GEMBin48NetTime
     
     # The type of connection to use. It should match a section below. 
@@ -61,11 +52,8 @@ DEFAULTS_INI = u"""
     # Max number of times to try an I/O operation before declaring an error
     max_tries = 3
     
-    # What units the temperature sensors will be in:
-    temperature_unit = degree_F
-
+    # The following is for socket connections: 
     [[socket]]
-        # The following is for socket connections: 
         host = 192.168.1.104
         port = 8083
         timeout = 20
@@ -247,7 +235,7 @@ class SocketConnection(BaseConnection):
 # ===============================================================================
 
 class BTBase(object):
-    """Base type for various Brultech packet types.
+    """Base type for the Brultech packet types.
 
     Superclasses should provide:
 
@@ -307,6 +295,62 @@ class BTBase(object):
             raise weewx.WeeWxIOError("Bad packet ID. Got %d, expected %d" % (buf[2], self.packet_ID))
 
 
+class GEMAscii(BTBase):
+    """Implements 'ASCII with WH' packet (format #2)"""
+
+    def __init__(self, source, **bt_dict):
+        super(GEMAscii, self).__init__(source)
+        self.packet_length = None
+        self.packet_format = 2
+
+    def get_packet(self):
+        # Request a single packet of unknown length
+        byte_buf = self.source.read_with_prompt(b'^^^APISPK', None)
+
+        # Extract the packet from the buffer
+        packet = self._extract_packet_from(byte_buf)
+        return packet
+
+    def _extract_packet_from(self, byte_buf):
+        try:
+            # Python 3
+            # noinspection PyUnresolvedReferences
+            from urllib.parse import parse_qsl
+        except ImportError:
+            # Python 2
+            # noinspection PyUnresolvedReferences
+            from urlparse import parse_qsl
+
+        tuple_buf = parse_qsl(byte_buf)
+
+        packet = {}
+        for obs_type, val in tuple_buf:
+            if obs_type == b'n':
+                packet['ser_no'] = int(val)
+            elif obs_type == b'm':
+                packet['secs'] = int(val) * 60
+            elif obs_type == b'v':
+                packet['ch1_volt'] = float(val)
+            else:
+                underscore = obs_type.find(b'_')
+                channel = int(obs_type[underscore + 1:])
+                obs_generic = obs_type[:underscore].decode('ascii')
+                if obs_generic == 'wh':
+                    packet['ch%d_energy' % channel] = int(float(val) * 3600 + 0.5)  # Convert to watt-sec
+                elif obs_generic == 'p':
+                    packet['ch%d_power' % channel] = float(val)
+                elif obs_generic == 'a':
+                    packet['ch%d_amp' % channel] = float(val)
+                elif obs_generic == 't':
+                    packet['ch%d_temperature' % channel] = float(val)
+                elif obs_generic == 'p':
+                    packet['ch%d_count' % channel] = int(val)
+                else:
+                    log.debug('Unrecognized observation type', obs_type)
+
+        return packet
+
+
 class GEMBin48Net(BTBase):
     """Implement the GEM BIN48-NET (format #5) packet"""
 
@@ -321,7 +365,7 @@ class GEMBin48Net(BTBase):
         packet = {
             'dateTime': int(time.time() + 0.5),
             'usUnits': weewx.METRICWX,
-            'v1_volt': float(struct.unpack('>H', byte_buf[3:5])[0]) / 10.0,
+            'ch1_volt': float(struct.unpack('>H', byte_buf[3:5])[0]) / 10.0,
             'ser_no': struct.unpack('>H', byte_buf[485:487])[0],
             'unit_id': byte_buf[488],
             'secs': unpack(byte_buf[585:588])
@@ -346,7 +390,7 @@ class GEMBin48Net(BTBase):
         packet.update(current)
 
         # Extract pulses:
-        pulse = extract_seq(byte_buf[588:], 4, 3, 'p%d_count')
+        pulse = extract_seq(byte_buf[588:], 4, 3, 'ch%d_count')
         packet.update(pulse)
 
         # Extract temperatures:
@@ -354,7 +398,7 @@ class GEMBin48Net(BTBase):
             t = _mktemperature(byte_buf[600 + 2 * i:])
             # Ignore any out of range temperatures; keep the rest
             if abs(t) <= 255:
-                packet['t%d_temperature' % (i + 1)] = t
+                packet['ch%d_temperature' % (i + 1)] = t
 
         return packet
 
@@ -526,8 +570,8 @@ if __name__ == '__main__':
     device = loader({}, None)
     device.setTime()
 
-    for packet in device.genLoopPackets():
-        print(packet)
+    for pkt in device.genLoopPackets():
+        print(pkt)
         #
         # for key in packet:
         #     if key.startswith('ch8'):
