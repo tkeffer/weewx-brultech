@@ -12,6 +12,7 @@ from __future__ import print_function, with_statement
 
 import calendar
 import logging
+import sys
 import time
 import struct
 
@@ -30,7 +31,7 @@ from weeutil.weeutil import to_int, to_float
 
 log = logging.getLogger(__name__)
 
-DRIVER_NAME = 'BRULTECH'
+DRIVER_NAME = 'Brultech'
 DRIVER_VERSION = '0.1.0'
 
 DEFAULTS_INI = u"""
@@ -52,6 +53,8 @@ DEFAULTS_INI = u"""
     # Max number of times to try an I/O operation before declaring an error
     max_tries = 3
     
+    driver = user.brultech.Brultech
+
     # The following is for socket connections: 
     [[socket]]
         host = 192.168.1.104
@@ -75,6 +78,10 @@ def loader(config_dict, engine):
     bt_config.merge(config_dict.get('Brultech', {}))
     # Instantiate and return the driver
     return Brultech(**bt_config.dict())
+
+def configurator_loader(config_dict):  # @UnusedVariable
+    return BrultechConfigurator()
+
 
 
 # ===============================================================================
@@ -246,10 +253,6 @@ class BTBase(object):
 
     self.packet_length: The length of the packet.
     """
-
-    SEC_COUNTER_MAX = 16777216  # 256^3
-    BYTE4_COUNTER_MAX = 4294967296  # 256^4
-    BYTE5_COUNTER_MAX = 1099511627776  # 256^5
 
     def __init__(self, source):
         self.source = source
@@ -502,6 +505,10 @@ class Brultech(weewx.drivers.AbstractDevice):
         # Send the command
         self.source.write_with_response(b"^^^SYSDTM%b\r" % time_str, b"DTM\r\n")
 
+    def get_info(self):
+        all = self.source.read_with_prompt(b'^^^RQSALL', None)
+        return all
+
 
 def source_factory(source_name, bt_dict):
     """Instantiate and return a source of type 'source_name'.
@@ -519,16 +526,55 @@ def source_factory(source_name, bt_dict):
 
 
 # ===============================================================================
+#                      Class BrultechConfigurator
+# ===============================================================================
+
+class BrultechConfigurator(weewx.drivers.AbstractConfigurator):
+    @property
+    def description(self):
+        return "Configures the Brultech energy monitors."
+
+    @property
+    def usage(self):
+        return """%prog [config_file] [--help] [--info]"""
+
+    def add_options(self, parser):
+        super(BrultechConfigurator, self).add_options(parser)
+        parser.add_option("--info", action="store_true", dest="info",
+                          help="To print configuration information.")
+
+    def do_options(self, options, parser, config_dict, prompt):
+
+        device = Brultech(**config_dict[DRIVER_NAME])
+        if options.info:
+            self.show_info(device)
+
+    @staticmethod
+    def show_info(device, dest=sys.stdout):
+        """Query the configuration of the Vantage, printing out status
+        information"""
+
+        print("Querying...")
+        all = device.get_info()
+        print(all, file=dest)
+        print('temperature enabled = 0x%x' % all[181])
+        chunk_size = struct.unpack('<H', all[317:319])[0]
+        print('chunk size = %d' % chunk_size)
+
+# ===============================================================================
 #                            Packet Utilities
 # ===============================================================================
 
 def unpack(a):
     """Unpack a value from a byte array, little endian order."""
-    sum = 0
+    total = 0
+    # Work in reverse order, so the highest order byte is first
     for b in a[::-1]:
-        sum <<= 8
-        sum += b
-    return sum
+        # Bump our total so far 8 bits to the left
+        total <<= 8
+        # Add in this byte
+        total += b
+    return total
 
 
 def extract_seq(buf, N, nbyte, tag):
@@ -541,22 +587,14 @@ def extract_seq(buf, N, nbyte, tag):
 
 # Adapted from btmon.py
 def _mktemperature(b):
-    # firmware 1.61 and older use this for temperature
-    #        t = 0.5 * self._convert(b)
-
-    # firmware later than 1.61 uses this for temperature
-    t = 0.5 * ((b[1] & 0x7f) << 8 | b[0])
-    if (b[1] >> 7) != 0:
+    """Temperature is held in two bytes, little-endian order. The sign is held in the upper bit of the second byte
+    (i.e., it is *not* in two's complement."""
+    # Calculate the value
+    t = ((b[1] & 0x7f) << 8 | b[0]) / 2.0
+    # Check the sign
+    if b[1] & 0x80:
         t = -t
     return t
-
-
-# Adapted from btmon.py:
-def _calc_secs(oldpkt, newpkt):
-    ds = newpkt['secs'] - oldpkt['secs']
-    if newpkt['secs'] < oldpkt['secs']:
-        ds += BTBase.SEC_COUNTER_MAX
-    return ds
 
 
 if __name__ == '__main__':

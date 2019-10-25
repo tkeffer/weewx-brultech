@@ -35,11 +35,10 @@ Insert a stanza into your weewx.conf file that looks like:
 
 ```ini
 [Brultech]
-
     # See the install instructions for how to configure the Brultech devices!!
     
-    # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
-    # or GEMAscii:
+    # The type of packet to use. Possible choices are GEMBin48NetTime,
+    # GEMBin48Net, or GEMAscii:
     packet_type = GEMBin48NetTime
     
     # The type of connection to use. It should match a section below. 
@@ -52,19 +51,19 @@ Insert a stanza into your weewx.conf file that looks like:
     # Max number of times to try an I/O operation before declaring an error
     max_tries = 3
     
-    # What units the temperature sensors will be in:
-    temperature_unit = degree_F
+    driver = user.brultech.Brultech
 
+    # The following is for socket connections: 
     [[socket]]
-        # The following is for socket connections: 
         host = 192.168.1.104
         port = 8083
         timeout = 20
-        # After sending a command, how long to wait before looking for a response    
+        # After sending a command, how long to wait before looking for a response
         send_delay = 0.2
 
     
     [[sensor_map]]
+
 ```
 
 Be sure to set options `host` and `port` to their proper values for your network configuration.
