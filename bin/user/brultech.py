@@ -12,6 +12,7 @@ from __future__ import print_function, with_statement
 
 import calendar
 import logging
+import re
 import sys
 import time
 import struct
@@ -26,6 +27,7 @@ except ImportError:
 import configobj
 
 import weewx
+import weewx.accum
 import weewx.drivers
 from weeutil.weeutil import to_int, to_float
 
@@ -557,9 +559,7 @@ class BrultechConfigurator(weewx.drivers.AbstractConfigurator):
         print("Querying...")
         all = device.get_info()
         print(all, file=dest)
-        print('temperature enabled = 0x%x' % all[181])
-        chunk_size = struct.unpack('<H', all[317:319])[0]
-        print('chunk size = %d' % chunk_size)
+
 
 # ===============================================================================
 #                            Packet Utilities
@@ -597,6 +597,45 @@ def _mktemperature(b):
     return t
 
 
+# ===============================================================================
+#                            Configuration
+# ===============================================================================
+
+class BTAccumConfig(object):
+    """Configuration for the accumulators.
+
+    volts and temperatures can be treated normally. Energy and counts require special treatment.
+    """
+    energy_re = re.compile(r'^ch[0-9]+(_[ap])?_energy$')
+    count_re = re.compile(r'^ch[0-9]+_count$')
+    volt_re = re.compile(r'^ch[0-9]+_count$')
+    temperature_re = re.compile(r'^ch[0-9]+_temperature$')
+
+    def __getitem__(self, key):
+        if self.volt_re.match(key) or self.temperature_re.match(key):
+            # These are intensive quantities. The defaults will do.
+            return weewx.accum.OBS_DEFAULTS
+        elif self.energy_re.match(key) or self.count_re.match(key) \
+                or key in ('time_created', 'secs', 'unit_id'):
+            # These are extensive quantities. We need the last value (rather than the average).
+            return {'extractor': 'last'}
+        elif key == 'ser_no' or key == 'serial':
+            # These are strings
+            return {'accumulator': 'string', 'extractor': 'last'}
+        else:
+            raise KeyError(key)
+
+    def __contains__(self, key):
+        return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial')\
+               or self.energy_re.match(key)\
+               or self.count_re.match(key)\
+               or self.volt_re.match(key)\
+               or self.temperature_re.match(key)
+
+
+# Add the specialized accumulator configuration to accum_dict:
+weewx.accum.accum_dict.prepend(BTAccumConfig())
+
 if __name__ == '__main__':
     from weeutil.weeutil import timestamp_to_string
     import weeutil.logger
@@ -610,7 +649,3 @@ if __name__ == '__main__':
 
     for pkt in device.genLoopPackets():
         print(pkt)
-        #
-        # for key in packet:
-        #     if key.startswith('ch8'):
-        #         print(" %s = %s," % (key, packet[key]))
