@@ -491,6 +491,15 @@ class Brultech(weewx.drivers.AbstractDevice):
             yield packet
             time.sleep(self.poll_interval)
 
+    def getTime(self):
+        """Get the time on the Brultech device."""
+
+        # Can't figure out any other way to do this. Poll the device for a current packet:
+        packet = self.packet_obj.get_packet()
+        if 'time_created' in packet:
+            return packet['time_created']
+        raise NotImplementedError
+
     def setTime(self):
         """Set the time"""
 
