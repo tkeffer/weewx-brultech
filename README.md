@@ -3,7 +3,7 @@ weepwr
 
 Extensions to the weewx weather system for Brultech energy monitors.
 
-##Configuring your Brultech device
+###Configuring your Brultech device
 The Brultech energy monitors come with a bewildering array of modes and options. To keep things
 simple, we have made a number of assumptions:
 
@@ -30,11 +30,20 @@ Set it to server mode, using port 8083:
     
 That's it!
 
-## Manually configuring weewx.conf
+## Manually configuring WeeWX
+
+### Copy files
+Put the file `brultech.py` in the `user` subdirectory. Typically,
+
+```shell script
+cp brultech.py /home/weewx/bin/user/brultech.py
+```
+
+### Configure `weewx.conf`
 
 This section is about manually configuring the configuration file, `weewx.conf`.
 
-1. __Configure device driver__
+1. __Add section `[Brultech]`__
 
     Insert a new stanza `[Brultech]` into your `weewx.conf` file that looks like this:
 
@@ -134,4 +143,22 @@ under section `[Station]`, to `Brultech`:
    
         data_binding = bt_binding         
    ```
-   
+ 
+ 6. __Make sure the configuration service runs__
+ 
+ Because of its many specialized types, the Brultech driver requires setting up some custom
+ configurations. This is done by the `service brultech.BrultechService`. You must
+ add it to the list of services to run by adding it to the end of the `prep_services`. So, now
+ your `[Engine]` section looks something like this: 
+ 
+ ```ini
+ [Engine]
+
+    [[Services]]
+        # This section specifies the services that should be run. They are
+        # grouped by type, and the order of services within each group
+        # determines the order in which the services will be run.
+        prep_services = weewx.engine.StdTimeSynch, user.brultech.BrultechService
+        data_services = ,
+        ...
+```

@@ -29,6 +29,7 @@ import configobj
 import weewx
 import weewx.accum
 import weewx.drivers
+import weewx.engine
 from weeutil.weeutil import to_int, to_float
 
 log = logging.getLogger(__name__)
@@ -641,9 +642,23 @@ class BTAccumConfig(object):
                or self.volt_re.match(key)\
                or self.temperature_re.match(key)
 
+class BrultechService(weewx.engine.StdService):
 
-# Add the specialized accumulator configuration to accum_dict:
-weewx.accum.accum_dict.prepend(BTAccumConfig())
+    def __init__(self, engine, config_dict):
+        # Initialize my base class
+        super(BrultechService, self).__init__(engine, config_dict)
+
+        self.btac = BTAccumConfig()
+        self.bind(weewx.STARTUP, self.startup)
+
+    def startup(self, event):
+        """Set up global configuration resources for the Brultech driver"""
+
+        # Add the specialized accumulator configuration to accum_dict:
+        weewx.accum.accum_dict.prepend(self.btac)
+
+    def shutDown(self):
+        weewx.accum.accum_dict.remove(self.btac)
 
 if __name__ == '__main__':
     from weeutil.weeutil import timestamp_to_string

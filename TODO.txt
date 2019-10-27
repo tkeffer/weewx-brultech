@@ -1,7 +1,8 @@
-Need to deal with wrap arounds.
+Implement
+  get_scalar()
+  get_series()
+  get_aggregation()
 
-Configuration utility
-
---info utility
+Implement a minimal skin.
 
 Calculations suitable for the oil furnace.
