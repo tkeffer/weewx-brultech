@@ -82,9 +82,9 @@ def loader(config_dict, engine):
     # Instantiate and return the driver
     return Brultech(**bt_config.dict())
 
+
 def configurator_loader(config_dict):  # @UnusedVariable
     return BrultechConfigurator()
-
 
 
 # ===============================================================================
@@ -515,7 +515,8 @@ class Brultech(weewx.drivers.AbstractDevice):
         # Form the byte-string.
         time_str = b",".join([b"%02d" % x for x in (y, mo, d, h, mn, s)])
         # Send the command
-        self.source.write_with_response(b"^^^SYSDTM%b\r" % time_str, b"DTM\r\n")
+        self.source.write_with_response(b"^^^SYSDTM%s\r" % time_str, b"DTM\r\n")
+        log.debug("Set time to '%s'" % time_str)
 
     def get_info(self):
         all = self.source.read_with_prompt(b'^^^RQSALL', None)
@@ -556,7 +557,6 @@ class BrultechConfigurator(weewx.drivers.AbstractConfigurator):
                           help="To print configuration information.")
 
     def do_options(self, options, parser, config_dict, prompt):
-
         device = Brultech(**config_dict[DRIVER_NAME])
         if options.info:
             self.show_info(device)
@@ -611,21 +611,26 @@ def _mktemperature(b):
 #                            Configuration
 # ===============================================================================
 
+# Regular expressions for the various channel types
+volt_re = re.compile(r'^ch[0-9]+_count$')
+temperature_re = re.compile(r'^ch[0-9]+_temperature$')
+energy_re = re.compile(r'^ch[0-9]+(_[ap])?_energy$')
+count_re = re.compile(r'^ch[0-9]+_count$')
+
+
 class BTAccumConfig(object):
-    """Configuration for the accumulators.
+    """Fake dictionary that, when keyed with Brultech observation types, returns
+    the proper accumulator configuration for that type.
 
     volts and temperatures can be treated normally. Energy and counts require special treatment.
     """
-    energy_re = re.compile(r'^ch[0-9]+(_[ap])?_energy$')
-    count_re = re.compile(r'^ch[0-9]+_count$')
-    volt_re = re.compile(r'^ch[0-9]+_count$')
-    temperature_re = re.compile(r'^ch[0-9]+_temperature$')
 
     def __getitem__(self, key):
-        if self.volt_re.match(key) or self.temperature_re.match(key):
+        global volt_re, temperature_re, energy_re, count_re
+        if volt_re.match(key) or temperature_re.match(key):
             # These are intensive quantities. The defaults will do.
             return weewx.accum.OBS_DEFAULTS
-        elif self.energy_re.match(key) or self.count_re.match(key) \
+        elif energy_re.match(key) or count_re.match(key) \
                 or key in ('time_created', 'secs', 'unit_id'):
             # These are extensive quantities. We need the last value (rather than the average).
             return {'extractor': 'last'}
@@ -633,14 +638,17 @@ class BTAccumConfig(object):
             # These are strings
             return {'accumulator': 'string', 'extractor': 'last'}
         else:
+            # Don't know what it is. Raise a KeyError
             raise KeyError(key)
 
     def __contains__(self, key):
-        return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial')\
-               or self.energy_re.match(key)\
-               or self.count_re.match(key)\
-               or self.volt_re.match(key)\
-               or self.temperature_re.match(key)
+        global volt_re, temperature_re, energy_re, count_re
+        return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial') \
+               or volt_re.match(key) \
+               or temperature_re.match(key) \
+               or energy_re.match(key) \
+               or count_re.match(key)
+
 
 class BrultechService(weewx.engine.StdService):
 
@@ -649,9 +657,9 @@ class BrultechService(weewx.engine.StdService):
         super(BrultechService, self).__init__(engine, config_dict)
 
         self.btac = BTAccumConfig()
-        self.bind(weewx.STARTUP, self.startup)
+        self.bind(weewx.CONFIG, self.config)
 
-    def startup(self, event):
+    def config(self, event):
         """Set up global configuration resources for the Brultech driver"""
 
         # Add the specialized accumulator configuration to accum_dict:
@@ -659,6 +667,7 @@ class BrultechService(weewx.engine.StdService):
 
     def shutDown(self):
         weewx.accum.accum_dict.remove(self.btac)
+
 
 if __name__ == '__main__':
     from weeutil.weeutil import timestamp_to_string
