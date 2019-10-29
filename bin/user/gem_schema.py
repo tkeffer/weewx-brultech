@@ -21,7 +21,7 @@ table = [
             ('interval', 'INTEGER NOT NULL'),
             ('ch1_volt', 'REAL')
             ] + \
-        [('ch%d_a_energy' % (i + 1), 'INTEGER') for i in range(max_current_channels)] + \
+        [('ch%d_a_energy2' % (i + 1), 'INTEGER') for i in range(max_current_channels)] + \
         [('ch%d_temperature' % (i + 1), 'REAL') for i in range(max_temperature_channels)] + \
         [('ch%d_count' % (i + 1), 'INTEGER') for i in range(max_pulse_channels)]
 

@@ -30,10 +30,12 @@ import weewx
 import weewx.accum
 import weewx.drivers
 import weewx.engine
+import weewx.series
 import weewx.units
 import weewx.xtypes
 import weeutil.timediff
 from weeutil.weeutil import to_int, to_float
+from weewx.units import ValueTuple
 
 log = logging.getLogger(__name__)
 
@@ -741,6 +743,48 @@ class BTExtends(object):
             # No. Go get it.
             self.prev_record = db_manager.getRecord(prev_ts)
 
+    SQL_TEMPLATE = "SELECT g1.dateTime, (g2.%(obs_type)s-g1.%(obs_type)s)/(g2.dateTime-g1.dateTime), " \
+                   "g1.usUnits, g1.interval FROM archive g1 " \
+                   "INNER JOIN archive g2 ON g2.dateTime=g1.dateTime-g1.interval*60 " \
+                   "WHERE g1.dateTime>%(start)s AND g1.dateTime<=%(stop)s;"
+
+    @staticmethod
+    def get_series(obs_type, timespan, db_manager, aggregate_type=None, aggregate_interval=None):
+        """Return a series from the database"""
+        # We only know how to get series of power
+        if not power_re.match(obs_type):
+            raise weewx.UnknownType(obs_type)
+
+        # Get the corresponding energy name
+        energy_name = obs_type.replace('power', 'energy2')
+
+        startstamp, stopstamp = timespan
+        start_vec = list()
+        stop_vec = list()
+        data_vec = list()
+
+        if aggregate_type:
+            # To be done:
+            raise weewx.UnknownAggregation(aggregate_type)
+        else:
+            # No aggregation
+            sql_str = BTExtends.SQL_TEMPLATE % {'obs_type': energy_name, 'start': timespan[0], 'stop': timespan[1]}
+            std_unit_system = None
+            for record in db_manager.genSql(sql_str):
+                start_vec.append(record[0] - record[3] * 60)
+                stop_vec.append(record[0])
+                if std_unit_system:
+                    if std_unit_system != record[2]:
+                        raise weewx.UnsupportedFeature("Unit type cannot change within an aggregation interval.")
+                else:
+                    std_unit_system = record[2]
+                data_vec.append(record[1])
+            unit, unit_group = weewx.units.getStandardUnitType(std_unit_system, obs_type, aggregate_type)
+
+        return (ValueTuple(start_vec, 'unix_epoch', 'group_time'),
+                ValueTuple(stop_vec, 'unix_epoch', 'group_time'),
+                ValueTuple(data_vec, unit, unit_group))
+
 
 class BrultechService(weewx.engine.StdService):
     """A WeeWX service that arranges for configuration information to be loaded, and for
@@ -783,6 +827,9 @@ class BrultechService(weewx.engine.StdService):
         # Add the Brultech derived scalar types to the list of extensions
         weewx.xtypes.scalar_types.append(self.bt_extends.get_scalar)
 
+        # Add the Brultech derived series types to the list of series extensions
+        weewx.series.series_types.append(BTExtends.get_series)
+
     def new_loop_packet(self, event):
         self.bt_extends.add_power_to_packet(event.packet)
 
@@ -790,10 +837,10 @@ class BrultechService(weewx.engine.StdService):
         weewx.accum.accum_dict.remove(self.bt_accum_config)
         weewx.units.obs_group_dict.remove(self.bt_obs_group_dict)
         weewx.xtypes.scalar_types.remove(self.bt_extends.get_scalar)
+        weewx.series.series_types.remove(BTExtends.get_series)
         self.bt_accum_config = None
         self.bt_obs_group_dict = None
         self.bt_extends = None
-
 
 
 if __name__ == '__main__':
