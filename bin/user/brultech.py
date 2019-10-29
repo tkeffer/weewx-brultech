@@ -634,7 +634,9 @@ class BTAccumConfig(object):
     """Fake dictionary that, when keyed with Brultech observation types, returns
     the proper accumulator configuration for that type.
 
-    volts and temperatures can be treated normally. Energy and counts require special treatment.
+    - volts and temperatures can be treated normally.
+    - Energy and counts are extensive variables that require special treatment.
+    - 'ser_no' and 'serial' are strings and will require a string accumulator.
     """
 
     def __getitem__(self, key):
@@ -654,6 +656,7 @@ class BTAccumConfig(object):
             raise KeyError(key)
 
     def __contains__(self, key):
+        """Does key match any type we know about?"""
         global volt_re, temperature_re, energy2_re, count_re
         return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial') \
                or volt_re.match(key) \
@@ -664,7 +667,10 @@ class BTAccumConfig(object):
 
 class BTObsGroupDict(object):
     """Fake dictionary that, when keyed with Brultech observation types, returns
-    the unit group it belongs to."""
+    the unit group it belongs to.
+
+    For example, when keyed with 'ch4_a_power', it returns 'group_power'.
+    """
 
     def __getitem__(self, key):
         global volt_re, temperature_re, energy2_re, count_re, power_re
@@ -707,7 +713,7 @@ class BTExtends(object):
         self.prev_record = None
 
     def add_power_to_packet(self, packet):
-        """Add power for all energy channels that appear in a packet"""
+        """Calculate and add power for all energy channels that appear in a packet"""
         global energy2_re
         # Scan through the packet...
         for obs_type in packet.keys():
