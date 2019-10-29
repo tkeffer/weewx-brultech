@@ -258,12 +258,14 @@ class BTBase(object):
 
     Superclasses should provide:
 
-    self.packet_format: The packet format number. See the Brultech Packet Format Guide
+        self.packet_format: The packet format number. See the Brultech Packet Format Guide
 
-    self.packet_ID: Not to be confused with "packet_format" above. This is the byte
-    identifier carried by the packet in index 2.
+    In addition, for binary packets:
 
-    self.packet_length: The length of the packet.
+        self.packet_ID: Not to be confused with "packet_format" above. This is the byte
+        identifier carried by binary packets in index 2.
+
+        self.packet_length: The length of the packet.
     """
 
     def __init__(self, source):
@@ -607,7 +609,7 @@ def extract_seq(buf, N, nbyte, tag):
 # Adapted from btmon.py
 def _mktemperature(b):
     """Temperature is held in two bytes, little-endian order. The sign is held in the upper bit of the second byte
-    (i.e., it is *not* in two's complement."""
+    (i.e., it the value is *not* encoded using two's complement)."""
     # Calculate the value
     t = ((b[1] & 0x7f) << 8 | b[0]) / 2.0
     # Check the sign
@@ -621,7 +623,7 @@ def _mktemperature(b):
 # ===============================================================================
 
 # Regular expressions for the various channel types
-volt_re = re.compile(r'^ch[0-9]+_count$')
+volt_re = re.compile(r'^ch[0-9]+_volt$')
 temperature_re = re.compile(r'^ch[0-9]+_temperature$')
 energy2_re = re.compile(r'^ch[0-9]+(_[ap])?_energy2$')
 count_re = re.compile(r'^ch[0-9]+_count$')
@@ -675,6 +677,7 @@ class BTObsGroupDict(object):
                 or energy2_re.match(key) \
                 or count_re.match(key) \
                 or power_re.match(key):
+            # For these, the type can be inferred from the observation name.
             underscore = key.rfind('_')
             if underscore == -1:
                 return None
@@ -692,10 +695,10 @@ class BTObsGroupDict(object):
 
 
 class BTExtends(object):
-    """Extensions for the WeeWX extensible type system. It performs two functions:
+    """Extensions for the WeeWX extensible type system. It performs three functions:
     1. Add power types to a packet. These are calculated from time differences of energy.
-    2. Calculate power from energy using the WeeWX extensible type system. This is useful in reports
-    when power is not stored in the database.
+    2. Calculate a scalar power from energy, using data in the database.
+    3. Calculate a series power from energy, using data in the database.
     """
 
     def __init__(self, bt_dict):
@@ -704,20 +707,22 @@ class BTExtends(object):
         self.prev_record = None
 
     def add_power_to_packet(self, packet):
+        """Add power for all energy channels that appear in a packet"""
         global energy2_re
         # Scan through the packet...
         for obs_type in packet.keys():
-            # ... looking for something we recognize.
+            # ... looking for energy keys that we recognize.
             if energy2_re.match(obs_type):
                 # Have we seen this type before? If not, create a new TimeDerivative object for it
                 if obs_type not in self.derivatives:
                     self.derivatives[obs_type] = weeutil.timediff.TimeDerivative(obs_type, self.stale)
-                # Add the record to it. Get the derivative in return. If there isn't enough information to
-                # calculate the derivative, an exception may be raised. Be prepared to catch it.
+                # Add the packet to the TimeDerivative object, getting the derivative in return. If there isn't enough
+                # information to calculate the derivative, an exception may be raised. Be prepared to catch it.
                 try:
                     deriv = self.derivatives[obs_type].add_record(packet)
                     # Get the name for power. This will turn something like ch5_a_energy2 to ch5_a_power
                     power_name = obs_type.replace('energy2', 'power')
+                    # Save it under that name
                     packet[power_name] = deriv
                 except weewx.CannotCalculate:
                     pass
@@ -733,8 +738,11 @@ class BTExtends(object):
         # with ch5_a_energy2:
         energy2_name = obs_type.replace('power', 'energy2')
 
-        # We only know how to calculate power. Also, the energy name must be in the record:
-        if not power_re.match(obs_type) or energy2_name not in record:
+        # We only know how to calculate power. Ignore others.
+        if not energy2_re.match(energy2_name):
+            raise weewx.UnknownType(obs_type)
+        # We require that the energy value be in the record
+        if energy2_name not in record:
             raise weewx.CannotCalculate(obs_type)
 
         prev_ts = record['dateTime'] - record['interval']
@@ -743,6 +751,14 @@ class BTExtends(object):
             # No. Go get it.
             self.prev_record = db_manager.getRecord(prev_ts)
 
+        if record[energy2_name] is not None and self.prev_record.get(energy2_name) is not None:
+            deriv = (record[energy2_name] - self.prev_record.get(energy2_name)) \
+                    / (record['dateTime'] - self.prev_record['dateTime'])
+        else:
+            deriv = None
+        return deriv
+
+    # This SQL statement uses an inner join to calculate the derivative over a time interval.
     SQL_TEMPLATE = "SELECT g1.dateTime, (g2.%(obs_type)s-g1.%(obs_type)s)/(g2.dateTime-g1.dateTime), " \
                    "g1.usUnits, g1.interval FROM archive g1 " \
                    "INNER JOIN archive g2 ON g2.dateTime=g1.dateTime-g1.interval*60 " \
@@ -758,7 +774,6 @@ class BTExtends(object):
         # Get the corresponding energy name
         energy_name = obs_type.replace('power', 'energy2')
 
-        startstamp, stopstamp = timespan
         start_vec = list()
         stop_vec = list()
         data_vec = list()
@@ -787,8 +802,8 @@ class BTExtends(object):
 
 
 class BrultechService(weewx.engine.StdService):
-    """A WeeWX service that arranges for configuration information to be loaded, and for
-    loop packets to get filled out with derived types, particularly power."""
+    """A WeeWX service that arranges for configuration information to be loaded. It also listens
+    for NEW_LOOP_PACKET events, and uses them to fill out a packet with power information. """
 
     def __init__(self, engine, config_dict):
         # Initialize my base class
@@ -824,10 +839,10 @@ class BrultechService(weewx.engine.StdService):
         # Add the specialized dictionary for mapping type names to unit groups:
         weewx.units.obs_group_dict.extend(self.bt_obs_group_dict)
 
-        # Add the Brultech derived scalar types to the list of extensions
+        # Add the derived scalar types to the list of extensions
         weewx.xtypes.scalar_types.append(self.bt_extends.get_scalar)
 
-        # Add the Brultech derived series types to the list of series extensions
+        # Add the derived series types to the list of series extensions
         weewx.series.series_types.append(BTExtends.get_series)
 
     def new_loop_packet(self, event):
