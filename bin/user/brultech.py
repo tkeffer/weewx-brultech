@@ -750,6 +750,10 @@ class BrultechService(weewx.engine.StdService):
         # Initialize my base class
         super(BrultechService, self).__init__(engine, config_dict)
 
+        self.bt_accum_config = None
+        self.bt_obs_group_dict = None
+        self.bt_extends = None
+
         self.bind(weewx.CONFIG, self.config)
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
@@ -786,9 +790,10 @@ class BrultechService(weewx.engine.StdService):
         weewx.accum.accum_dict.remove(self.bt_accum_config)
         weewx.units.obs_group_dict.remove(self.bt_obs_group_dict)
         weewx.xtypes.scalar_types.remove(self.bt_extends.get_scalar)
-        del self.bt_accum_config
-        del self.bt_obs_group_dict
-        del self.bt_extends
+        self.bt_accum_config = None
+        self.bt_obs_group_dict = None
+        self.bt_extends = None
+
 
 
 if __name__ == '__main__':
