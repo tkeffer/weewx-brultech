@@ -13,9 +13,9 @@ from __future__ import print_function, with_statement
 import calendar
 import logging
 import re
+import struct
 import sys
 import time
-import struct
 
 try:
     # Python 3
@@ -30,6 +30,9 @@ import weewx
 import weewx.accum
 import weewx.drivers
 import weewx.engine
+import weewx.units
+import weewx.xtypes
+import weeutil.timediff
 from weeutil.weeutil import to_int, to_float
 
 log = logging.getLogger(__name__)
@@ -41,6 +44,10 @@ DEFAULTS_INI = u"""
 [Brultech]
 
     # See the install instructions for how to configure the Brultech devices!!
+    
+    # Power is computed as the difference between energy records. How old a 
+    # record can be and still used for this computation:
+    stale = 1800
     
     # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
     # or GEMAscii:
@@ -342,7 +349,7 @@ class GEMAscii(BTBase):
                 channel = int(obs_type[underscore + 1:])
                 obs_generic = obs_type[:underscore].decode('ascii')
                 if obs_generic == 'wh':
-                    packet['ch%d_energy' % channel] = int(float(val) * 3600 + 0.5)  # Convert to watt-sec
+                    packet['ch%d_energy2' % channel] = int(float(val) * 3600 + 0.5)  # Convert to watt-sec
                 elif obs_generic == 'p':
                     packet['ch%d_power' % channel] = float(val)
                 elif obs_generic == 'a':
@@ -381,11 +388,11 @@ class GEMBin48Net(BTBase):
         packet['serial'] = '%03d%05d' % (packet['unit_id'], packet['ser_no'])
 
         # Extract absolute watt-seconds:
-        aws = extract_seq(byte_buf[5:], 32, 5, 'ch%d_a_energy')
+        aws = extract_seq(byte_buf[5:], 32, 5, 'ch%d_a_energy2')
         packet.update(aws)
 
         # Extract polarized watt-seconds:
-        pws = extract_seq(byte_buf[245:], 32, 5, 'ch%d_p_energy')
+        pws = extract_seq(byte_buf[245:], 32, 5, 'ch%d_p_energy2')
         packet.update(pws)
 
         # Extract current:
@@ -614,8 +621,9 @@ def _mktemperature(b):
 # Regular expressions for the various channel types
 volt_re = re.compile(r'^ch[0-9]+_count$')
 temperature_re = re.compile(r'^ch[0-9]+_temperature$')
-energy_re = re.compile(r'^ch[0-9]+(_[ap])?_energy$')
+energy2_re = re.compile(r'^ch[0-9]+(_[ap])?_energy2$')
 count_re = re.compile(r'^ch[0-9]+_count$')
+power_re = re.compile(r'^ch[0-9]+(_[ap])?_power$')
 
 
 class BTAccumConfig(object):
@@ -626,11 +634,11 @@ class BTAccumConfig(object):
     """
 
     def __getitem__(self, key):
-        global volt_re, temperature_re, energy_re, count_re
+        global volt_re, temperature_re, energy2_re, count_re
         if volt_re.match(key) or temperature_re.match(key):
             # These are intensive quantities. The defaults will do.
             return weewx.accum.OBS_DEFAULTS
-        elif energy_re.match(key) or count_re.match(key) \
+        elif energy2_re.match(key) or count_re.match(key) \
                 or key in ('time_created', 'secs', 'unit_id'):
             # These are extensive quantities. We need the last value (rather than the average).
             return {'extractor': 'last'}
@@ -642,35 +650,148 @@ class BTAccumConfig(object):
             raise KeyError(key)
 
     def __contains__(self, key):
-        global volt_re, temperature_re, energy_re, count_re
+        global volt_re, temperature_re, energy2_re, count_re
         return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial') \
                or volt_re.match(key) \
                or temperature_re.match(key) \
-               or energy_re.match(key) \
+               or energy2_re.match(key) \
                or count_re.match(key)
 
 
+class BTObsGroupDict(object):
+    """Fake dictionary that, when keyed with Brultech observation types, returns
+    the unit group it belongs to."""
+
+    def __getitem__(self, key):
+        global volt_re, temperature_re, energy2_re, count_re, power_re
+        if key == 'time_created':
+            return "group_time"
+        elif key == 'secs':
+            return "group_deltatime"
+        elif volt_re.match(key) \
+                or temperature_re.match(key) \
+                or energy2_re.match(key) \
+                or count_re.match(key) \
+                or power_re.match(key):
+            underscore = key.rfind('_')
+            if underscore == -1:
+                return None
+            group = "group%s" % key[underscore:]
+            return group
+
+    def __contains__(self, key):
+        global volt_re, temperature_re, energy2_re, count_re, power_re
+        return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial') \
+               or volt_re.match(key) \
+               or temperature_re.match(key) \
+               or energy2_re.match(key) \
+               or count_re.match(key) \
+               or power_re.match(key)
+
+
+class BTExtends(object):
+    """Extensions for the WeeWX extensible type system. It performs two functions:
+    1. Add power types to a packet. These are calculated from time differences of energy.
+    2. Calculate power from energy using the WeeWX extensible type system. This is useful in reports
+    when power is not stored in the database.
+    """
+
+    def __init__(self, bt_dict):
+        self.stale = to_int(bt_dict.get('stale', 1800))
+        self.derivatives = {}
+        self.prev_record = None
+
+    def add_power_to_packet(self, packet):
+        global energy2_re
+        # Scan through the packet...
+        for obs_type in packet.keys():
+            # ... looking for something we recognize.
+            if energy2_re.match(obs_type):
+                # Have we seen this type before? If not, create a new TimeDerivative object for it
+                if obs_type not in self.derivatives:
+                    self.derivatives[obs_type] = weeutil.timediff.TimeDerivative(obs_type, self.stale)
+                # Add the record to it. Get the derivative in return. If there isn't enough information to
+                # calculate the derivative, an exception may be raised. Be prepared to catch it.
+                try:
+                    deriv = self.derivatives[obs_type].add_record(packet)
+                    # Get the name for power. This will turn something like ch5_a_energy2 to ch5_a_power
+                    power_name = obs_type.replace('energy2', 'power')
+                    packet[power_name] = deriv
+                except weewx.CannotCalculate:
+                    pass
+
+    def get_scalar(self, obs_type, record, db_manager):
+        """Calculate a Brultech derived observation type.
+
+        This version only knows how to calculate power from energy2.
+        """
+        self.prev_record = None
+
+        # Get the corresponding energy name from the power name. This replaces something like ch5_a_power
+        # with ch5_a_energy2:
+        energy2_name = obs_type.replace('power', 'energy2')
+
+        # We only know how to calculate power. Also, the energy name must be in the record:
+        if not power_re.match(obs_type) or energy2_name not in record:
+            raise weewx.CannotCalculate(obs_type)
+
+        prev_ts = record['dateTime'] - record['interval']
+        # See if we've cached a record with the right timestamp
+        if not self.prev_record or record['dateTime'] != prev_ts:
+            # No. Go get it.
+            self.prev_record = db_manager.getRecord(prev_ts)
+
+
 class BrultechService(weewx.engine.StdService):
+    """A WeeWX service that arranges for configuration information to be loaded, and for
+    loop packets to get filled out with derived types, particularly power."""
 
     def __init__(self, engine, config_dict):
         # Initialize my base class
         super(BrultechService, self).__init__(engine, config_dict)
 
-        self.btac = BTAccumConfig()
         self.bind(weewx.CONFIG, self.config)
+        self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
     def config(self, event):
         """Set up global configuration resources for the Brultech driver"""
 
-        # Add the specialized accumulator configuration to accum_dict:
-        weewx.accum.accum_dict.prepend(self.btac)
+        config_dict = event.config
+
+        # Start with the defaults. Make a copy --- we will be modifying it
+        bt_config = configobj.ConfigObj(brultech_defaults)['Brultech']
+        # Now merge in the overrides from the config file
+        bt_config.merge(config_dict.get('Brultech', {}))
+
+        # Create the specialized objects we will need:
+        self.bt_accum_config = BTAccumConfig()
+        self.bt_obs_group_dict = BTObsGroupDict()
+        self.bt_extends = BTExtends(bt_config)
+
+        # Now add them to their various services.
+
+        # Add the specialized accumulator dictionary.
+        weewx.accum.accum_dict.prepend(self.bt_accum_config)
+
+        # Add the specialized dictionary for mapping type names to unit groups:
+        weewx.units.obs_group_dict.extend(self.bt_obs_group_dict)
+
+        # Add the Brultech derived scalar types to the list of extensions
+        weewx.xtypes.scalar_types.append(self.bt_extends.get_scalar)
+
+    def new_loop_packet(self, event):
+        self.bt_extends.add_power_to_packet(event.packet)
 
     def shutDown(self):
-        weewx.accum.accum_dict.remove(self.btac)
+        weewx.accum.accum_dict.remove(self.bt_accum_config)
+        weewx.units.obs_group_dict.remove(self.bt_obs_group_dict)
+        weewx.xtypes.scalar_types.remove(self.bt_extends.get_scalar)
+        del self.bt_accum_config
+        del self.bt_obs_group_dict
+        del self.bt_extends
 
 
 if __name__ == '__main__':
-    from weeutil.weeutil import timestamp_to_string
     import weeutil.logger
 
     weewx.debug = 2
