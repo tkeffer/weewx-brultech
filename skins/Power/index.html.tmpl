@@ -1,0 +1,137 @@
+## Copyright 2009-2019 Tom Keffer
+## Distributed under terms of GPLv3.  See LICENSE.txt for your rights.
+#errorCatcher Echo
+##
+## Specifying an encoding of UTF-8 is usually safe:
+#encoding UTF-8
+##
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+    ## This choice should match the #encoding directive above
+    <meta charset="UTF-8">
+    <title>$station.location current power usage</title>
+    <link rel="stylesheet" type="text/css" href="weewx.css"/>
+    <link rel="icon" type="image/png" href="favicon.ico" />
+  </head>
+
+  <body>
+    <div id="container">
+      <div id="masthead">
+        <h1>$station.location</h1>
+        <h2>Current power usage</h2>
+          <h2>$current.dateTime</h2>
+      </div>
+
+      <div id="stats_group">
+
+        <div class="stats">
+          <div class="stats_header">
+            Current
+          </div>
+
+          <table>
+            <tbody>
+              <tr>
+                <td class="stats_label">All house</td>
+                <td class="stats_data">$current.ch8_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Dryer</td>
+                <td class="stats_data">$current.ch1_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Basement subpanel</td>
+                <td class="stats_data">$current.ch2_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">tk office</td>
+                <td class="stats_data">$current.ch3_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Fridge</td>
+                <td class="stats_data">$current.ch4_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot water heater</td>
+                <td class="stats_data">$current.ch5_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot tub</td>
+                <td class="stats_data">$current.ch6_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Upstairs subpanel</td>
+                <td class="stats_data">$current.ch7_a_power</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Oil furnace</td>
+                <td class="stats_data">$current.ch16_a_power</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div> <!--End class "stats_group" -->
+
+      <div id="content">
+        <div id="about">
+          <div class="header">
+            About this power monitor:
+          </div>
+          <table>
+            <caption class="caption">Location</caption>
+            <tr>
+              <td class="label">Latitude:</td>
+              <td class="data">$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
+            </tr>
+            <tr>
+              <td class="label">Longitude:</td>
+              <td class="data">$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
+            </tr>
+            <tr>
+              <td class="label">Altitude:</td>
+              <td class="data">$station.altitude</td>
+            </tr>
+          </table>
+          <p>
+            This station uses a $station.hardware, controlled by
+            <a href="http://www.weewx.com">'weewx'</a>, an experimental
+            weather software system written in Python. Weewx
+            was designed to be simple, fast, and easy to understand by
+            leveraging modern software concepts.
+          </p>
+          <p>Weewx uptime:  $station.uptime<br/>
+             Server uptime: $station.os_uptime<br/>
+             weewx v$station.version</p>
+        </div> <!-- End id "about" -->
+
+        <div id="plots">
+          <img src="day_total_power.png"   alt="All house power usage for the day" />
+        </div> <!-- End id "plots" -->
+      </div> <!-- End id "content" -->
+
+      <div id="navbar">
+        <input type="button" value="   Current   " onclick="openURL('index.html')" />
+        <input type="button" value="    Week     " onclick="openURL('week.html')" />
+        <input type="button" value="    Month    " onclick="openURL('month.html')" />
+        <input type="button" value="    Year     " onclick="openURL('year.html')" />
+      </div>
+    </div>
+
+    ## Include the Google Analytics code if the user has supplied an ID:
+    #if $Extras.has_key('googleAnalyticsId')
+    <script type="text/javascript">
+        var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+        document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+        try{
+            var pageTracker = _gat._getTracker("$Extras.googleAnalyticsId");
+            pageTracker._trackPageview();
+        } catch(err) {}
+    </script>
+    #end if
+
+</body>
+
+</html>
