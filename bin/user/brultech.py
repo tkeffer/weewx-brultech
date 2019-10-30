@@ -28,6 +28,7 @@ import configobj
 
 import weewx
 import weewx.accum
+import weewx.aggregate
 import weewx.drivers
 import weewx.engine
 import weewx.series
@@ -808,6 +809,22 @@ class BTExtends(object):
                 ValueTuple(stop_vec, 'unix_epoch', 'group_time'),
                 ValueTuple(data_vec, unit, unit_group))
 
+    @staticmethod
+    def get_aggregate(obs_type, timespan, aggregate_type, db_manager, **option_dict):
+
+        # We only know how to get aggregates of power
+        if not power_re.match(obs_type):
+            raise weewx.UnknownType(obs_type)
+        # And, even then, only averages:
+        if aggregate_type != 'avg':
+            raise weewx.UnknownAggregation(aggregate_type)
+
+        # Get the corresponding energy name
+        energy_name = obs_type.replace('power', 'energy2')
+
+        # The average power over the time period is just the time derivative of energy
+        return weewx.aggregate.get_aggregate(energy_name, timespan, 'tderiv', db_manager, **option_dict)
+
 
 class BrultechService(weewx.engine.StdService):
     """A WeeWX service that arranges for configuration information to be loaded. It also listens
@@ -853,6 +870,9 @@ class BrultechService(weewx.engine.StdService):
         # Add the derived series types to the list of series extensions
         weewx.series.series_types.append(BTExtends.get_series)
 
+        # Add the specialized aggregation types
+        weewx.aggregate.aggregate_fns.append(BTExtends.get_aggregate)
+
     def new_loop_packet(self, event):
         self.bt_extends.add_power_to_packet(event.packet)
 
@@ -861,6 +881,7 @@ class BrultechService(weewx.engine.StdService):
         weewx.units.obs_group_dict.remove(self.bt_obs_group_dict)
         weewx.xtypes.scalar_types.remove(self.bt_extends.get_scalar)
         weewx.series.series_types.remove(BTExtends.get_series)
+        weewx.aggregate.aggregate_fns.remove(BTExtends.get_aggregate)
         self.bt_accum_config = None
         self.bt_obs_group_dict = None
         self.bt_extends = None
