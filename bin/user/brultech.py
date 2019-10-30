@@ -62,6 +62,9 @@ DEFAULTS_INI = u"""
     # How often to poll the device for data
     poll_interval = 5
 
+    # Max number of channels to emit.
+    max_channels = 32
+    
     # Max number of times to try an I/O operation before declaring an error
     max_tries = 3
     
@@ -376,7 +379,7 @@ class GEMBin48Net(BTBase):
         self.packet_length = 619
         self.packet_ID = 5
         self.packet_format = 5
-        self.NUM_CHAN = 32  # there are 48 channels, but only 32 usable
+        self.max_channels = to_int(bt_dict.get('max_channels', 32))
 
     def _extract_packet_from(self, byte_buf):
         packet = {
@@ -392,15 +395,15 @@ class GEMBin48Net(BTBase):
         packet['serial'] = '%03d%05d' % (packet['unit_id'], packet['ser_no'])
 
         # Extract absolute watt-seconds:
-        aws = extract_seq(byte_buf[5:], 32, 5, 'ch%d_a_energy2')
+        aws = extract_seq(byte_buf[5:], self.max_channels, 5, 'ch%d_a_energy2')
         packet.update(aws)
 
         # Extract polarized watt-seconds:
-        pws = extract_seq(byte_buf[245:], 32, 5, 'ch%d_p_energy2')
+        pws = extract_seq(byte_buf[245:], self.max_channels, 5, 'ch%d_p_energy2')
         packet.update(pws)
 
         # Extract current:
-        current = extract_seq(byte_buf[489:], 32, 2, 'ch%d_amp')
+        current = extract_seq(byte_buf[489:], self.max_channels, 2, 'ch%d_amp')
         # Divide by 50, as per GEM manual
         for x in current:
             current[x] /= 50.0
@@ -785,7 +788,6 @@ class BTExtends(object):
         data_vec = list()
 
         if aggregate_type:
-            # To be done:
             raise weewx.UnknownAggregation(aggregate_type)
         else:
             # No aggregation
