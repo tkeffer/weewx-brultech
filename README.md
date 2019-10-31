@@ -5,7 +5,7 @@ Extensions to the weewx weather system for Brultech energy monitors.
 
 ###Configuring your Brultech device
 The Brultech energy monitors come with a bewildering array of modes and options. To keep things
-simple, we have made a number of assumptions:
+simple, this driver makes two assumptions:
 
 - The device will always be in server mode.
 - The device driver always polls the device.
@@ -49,35 +49,41 @@ This section is about manually configuring the configuration file, `weewx.conf`.
 
     ```ini
     [Brultech]
-        # See the install instructions for how to configure the Brultech devices!!
+
+        # See README.md for instructions on how to configure the Brultech devices!!
     
-        # The type of packet to use. Possible choices are GEMBin48NetTime,
-        # GEMBin48Net, or GEMAscii:
-        packet_type = GEMBin48NetTime
-    
-        # The type of connection to use. It should match a section below. 
-        # Right now, only 'socket' is supported.
-        connection = socket
+        # Power is computed as the difference between energy records. How old a 
+        # record can be and still used for this calculation:
+        stale = 1800
     
         # How often to poll the device for data
         poll_interval = 5
 
+        # Max number of channels to emit. Limit is set by hardware (48 for GEM).
+        max_channels = 32
+    
+        # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
+        # or GEMAscii:
+        packet_type = GEMBin48NetTime
+    
         # Max number of times to try an I/O operation before declaring an error
         max_tries = 3
     
         driver = user.brultech.Brultech
 
+        # The type of connection to use. It should match a section below. 
+        # Right now, only 'socket' is supported.
+        connection = socket
+    
         # The following is for socket connections: 
         [[socket]]
-            host = 192.168.1.104
+            host = 192.168.1.100
             port = 8083
             timeout = 20
-            # After sending a command, how long to wait before looking for a response
+            # After sending a command, how long to wait before looking for a response    
             send_delay = 0.2
 
-    
         [[sensor_map]]
-
     ```
 
     Be sure to set options `host` and `port` to their proper values for your network configuration.
@@ -99,7 +105,8 @@ under section `[Station]`, to `Brultech`:
 
 3. __Configure new binding__
 
-    Under stanza `[DataBindings]`, add a new binding `bt_binding` for the Brultech device. It should look like this: 
+    Under stanza `[DataBindings]`, add a new database binding `bt_binding` for the Brultech device.
+    It should look like this: 
 
     ```ini
    [DataBindings]
@@ -108,7 +115,6 @@ under section `[Station]`, to `Brultech`:
 
         [[bt_binding]]
             # The database must match one of the sections in [Databases].
-            # This is likely to be the only option you would want to change.
             database = bt_sqlite
             # The name of the table within the database
             table_name = archive
@@ -147,7 +153,7 @@ under section `[Station]`, to `Brultech`:
  6. __Make sure the configuration service runs__
  
  Because of its many specialized types, the Brultech driver requires setting up some custom
- configurations. This is done by the `service brultech.BrultechService`. You must
+ configurations. This is done by the service `brultech.BrultechService`. You must
  add it to the list of services to run by adding it to the end of the `process_services`. So, now
  your `[Engine]` section looks something like this: 
  

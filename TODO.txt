@@ -1,8 +1,1 @@
-Implement
-  get_scalar()
-  get_series()
-  get_aggregation()
-
-Implement a minimal skin.
-
 Calculations suitable for the oil furnace.

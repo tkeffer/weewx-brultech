@@ -46,40 +46,39 @@ DRIVER_VERSION = '0.1.0'
 DEFAULTS_INI = u"""
 [Brultech]
 
-    # See the install instructions for how to configure the Brultech devices!!
-    
+    # See README.md for instructions on how to configure the Brultech devices!!
+
     # Power is computed as the difference between energy records. How old a 
-    # record can be and still used for this computation:
+    # record can be and still used for this calculation:
     stale = 1800
-    
-    # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
-    # or GEMAscii:
-    packet_type = GEMBin48NetTime
-    
-    # The type of connection to use. It should match a section below. 
-    # Right now, only 'socket' is supported.
-    connection = socket
     
     # How often to poll the device for data
     poll_interval = 5
 
-    # Max number of channels to emit.
+    # Max number of channels to emit. Limit is set by hardware (48 for GEM).
     max_channels = 32
+    
+    # The type of packet to use. Possible choices are GEMBin48NetTime, GEMBin48Net,
+    # or GEMAscii:
+    packet_type = GEMBin48NetTime
     
     # Max number of times to try an I/O operation before declaring an error
     max_tries = 3
     
     driver = user.brultech.Brultech
 
+    # The type of connection to use. It should match a section below. 
+    # Right now, only 'socket' is supported.
+    connection = socket
+    
     # The following is for socket connections: 
     [[socket]]
-        host = 192.168.1.104
+        host = 192.168.1.100
         port = 8083
         timeout = 20
         # After sending a command, how long to wait before looking for a response    
         send_delay = 0.2
 
-    
     [[sensor_map]]
 
 """
