@@ -3,7 +3,7 @@ weepwr
 
 Extensions to the weewx weather system for Brultech energy monitors.
 
-###Configuring your Brultech device
+### Configuring your Brultech device
 The Brultech energy monitors come with a bewildering array of modes and options. To keep things
 simple, this driver makes two assumptions:
 

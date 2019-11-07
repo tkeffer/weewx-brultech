@@ -28,10 +28,8 @@ import configobj
 
 import weewx
 import weewx.accum
-import weewx.aggregate
 import weewx.drivers
 import weewx.engine
-import weewx.series
 import weewx.units
 import weewx.xtypes
 import weeutil.timediff
@@ -653,7 +651,7 @@ class BTAccumConfig(object):
             return {'extractor': 'last'}
         elif key == 'ser_no' or key == 'serial':
             # These are strings
-            return {'accumulator': 'string', 'extractor': 'last'}
+            return {'accumulator': 'firstlast', 'extractor': 'last'}
         else:
             # Don't know what it is. Raise a KeyError
             raise KeyError(key)
@@ -703,7 +701,7 @@ class BTObsGroupDict(object):
                or power_re.match(key)
 
 
-class BTExtends(object):
+class BTExtends(weewx.xtypes.XType):
     """Extensions for the WeeWX extensible type system. It performs three functions:
     1. Add power types to a packet. These are calculated from time differences of energy.
     2. Calculate a scalar power from energy, using data in the database.
@@ -718,8 +716,9 @@ class BTExtends(object):
     def add_power_to_packet(self, packet):
         """Calculate and add power for all energy channels that appear in a packet"""
         global energy2_re
-        # Scan through the packet...
-        for obs_type in packet.keys():
+        # Scan through the packet... (We will be changing the size of the packet, so we need to scan through
+        # a static list to avoid Python 3 errors).
+        for obs_type in list(packet.keys()):
             # ... looking for energy keys that we recognize.
             if energy2_re.match(obs_type):
                 # Have we seen this type before? If not, create a new TimeDerivative object for it
@@ -765,7 +764,7 @@ class BTExtends(object):
                     / (record['dateTime'] - self.prev_record['dateTime'])
         else:
             deriv = None
-        return deriv
+        return ValueTuple(deriv, 'watt', 'group_power')
 
     # This SQL statement uses an inner join to calculate the derivative over a time interval.
     SQL_TEMPLATE = "SELECT g1.dateTime, (g2.%(obs_type)s-g1.%(obs_type)s)/(g2.dateTime-g1.dateTime), " \
@@ -822,7 +821,7 @@ class BTExtends(object):
         energy_name = obs_type.replace('power', 'energy2')
 
         # The average power over the time period is just the time derivative of energy
-        return weewx.aggregate.get_aggregate(energy_name, timespan, 'tderiv', db_manager, **option_dict)
+        return weewx.xtypes.get_aggregate(energy_name, timespan, 'tderiv', db_manager, **option_dict)
 
 
 class BrultechService(weewx.engine.StdService):
@@ -832,18 +831,6 @@ class BrultechService(weewx.engine.StdService):
     def __init__(self, engine, config_dict):
         # Initialize my base class
         super(BrultechService, self).__init__(engine, config_dict)
-
-        self.bt_accum_config = None
-        self.bt_obs_group_dict = None
-        self.bt_extends = None
-
-        self.bind(weewx.CONFIG, self.config)
-        self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
-
-    def config(self, event):
-        """Set up global configuration resources for the Brultech driver"""
-
-        config_dict = event.config
 
         # Start with the defaults. Make a copy --- we will be modifying it
         bt_config = configobj.ConfigObj(brultech_defaults)['Brultech']
@@ -863,14 +850,10 @@ class BrultechService(weewx.engine.StdService):
         # Add the specialized dictionary for mapping type names to unit groups:
         weewx.units.obs_group_dict.extend(self.bt_obs_group_dict)
 
-        # Add the derived scalar types to the list of extensions
-        weewx.xtypes.scalar_types.append(self.bt_extends.get_scalar)
+        # Add the extended types to the list of extensions
+        weewx.xtypes.xtypes.append(self.bt_extends)
 
-        # Add the derived series types to the list of series extensions
-        weewx.series.series_types.append(BTExtends.get_series)
-
-        # Add the specialized aggregation types
-        weewx.aggregate.aggregate_fns.append(BTExtends.get_aggregate)
+        self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
 
     def new_loop_packet(self, event):
         self.bt_extends.add_power_to_packet(event.packet)
@@ -878,9 +861,7 @@ class BrultechService(weewx.engine.StdService):
     def shutDown(self):
         weewx.accum.accum_dict.remove(self.bt_accum_config)
         weewx.units.obs_group_dict.remove(self.bt_obs_group_dict)
-        weewx.xtypes.scalar_types.remove(self.bt_extends.get_scalar)
-        weewx.series.series_types.remove(BTExtends.get_series)
-        weewx.aggregate.aggregate_fns.remove(BTExtends.get_aggregate)
+        weewx.xtypes.xtypes.remove(BTExtends)
         self.bt_accum_config = None
         self.bt_obs_group_dict = None
         self.bt_extends = None
