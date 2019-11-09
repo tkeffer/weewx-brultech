@@ -750,10 +750,10 @@ class BTExtends(weewx.xtypes.XType):
         if not energy2_re.match(energy2_name):
             raise weewx.UnknownType(obs_type)
         # We require that the energy value be in the record
-        if energy2_name not in record:
+        if not record or energy2_name not in record:
             raise weewx.CannotCalculate(obs_type)
 
-        prev_ts = record['dateTime'] - record['interval']
+        prev_ts = record['dateTime'] - record['interval'] * 60
         # See if we've cached a record with the right timestamp
         if not self.prev_record or record['dateTime'] != prev_ts:
             # No. Go get it.
