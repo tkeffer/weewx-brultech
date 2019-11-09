@@ -1,0 +1,111 @@
+#errorCatcher Echo
+##
+## Specifying an encoding of UTF-8 is usually safe, but if your text is 
+## actually in Latin-1, then you should replace the string "UTF-8" with "latin-1"
+## If you do this, you should also change the 'Content-Type' metadata below.
+#encoding UTF-8
+##
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head profile="http://www.w3.org/2005/10/profile">
+    ## This choice should match the #encoding directive above
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>$station.location Monthly energy summary</title>
+    <link rel="stylesheet" type="text/css" href="weewx.css"/>
+    <link rel="icon" type="image/png" href="favicon.ico" />
+    <script type="text/javascript">
+      function openURL(urlname)
+      {
+        window.location=urlname;
+      }
+    </script>
+  </head>
+
+  <body>
+    <div id="container">
+      <div id="masthead">
+        <h1>$station.location</h1>
+        <h2>Monthly Energy Summary</h2>
+          <h2>$current.dateTime</h2>
+      </div>
+
+      <div id="stats_group">
+
+        <div class="stats">
+          <div class="stats_header">
+            This Month
+          </div>
+
+          <table>
+            <tbody>
+              <tr>
+                <td class="stats_label">All house</td>
+                <td class="stats_data">$month.ch8_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Dryer</td>
+                <td class="stats_data">$month.ch1_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Basement subpanel</td>
+                <td class="stats_data">$month.ch2_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">tk office</td>
+                <td class="stats_data">$month.ch3_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Fridge</td>
+                <td class="stats_data">$month.ch4_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot water heater</td>
+                <td class="stats_data">$month.ch5_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Hot tub</td>
+                <td class="stats_data">$month.ch6_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Upstairs subpanel</td>
+                <td class="stats_data">$month.ch7_a_energy2.diff</td>
+              </tr>
+              <tr>
+                <td class="stats_label">Oil furnace</td>
+                <td class="stats_data">$month.ch16_a_energy2.diff</td>
+              </tr>
+            </tbody>
+          </table>
+
+        </div> <!-- End class "stats" -->
+
+      </div> <!-- End class "stats_group" -->
+
+      <div id="content">
+        
+        <div class="header">
+          <h3>Monthly Statistics and Plots</h3>
+        </div>
+        <div id="plots">
+          <img src="month_ch8_power.png"    alt="All house" />
+          <img src="month_ch1_power.png"    alt="Dryer" />
+          <img src="month_ch2_power.png"    alt="Basement subpanel" />
+          <img src="month_ch3_power.png"    alt="tk Office" />
+          <img src="month_ch4_power.png"    alt="Fridge" />
+          <img src="month_ch5_power.png"    alt="Hot water heater" />
+          <img src="month_ch6_power.png"    alt="Hot tub" />
+          <img src="month_ch7_power.png"    alt="Upstairs subpanel" />
+          <img src="month_ch16_power.png"   alt="Furnace" />
+        </div>
+      </div> <!-- End id "content" -->
+
+      <div id="navbar">
+        <input type="button" value="   Current   " onclick="openURL('index.html')" />
+        <input type="button" value="    Week     " onclick="openURL('week.html')" />
+        <input type="button" value="    Month    " onclick="openURL('month.html')" />
+        <input type="button" value="    Year     " onclick="openURL('year.html')" />
+      </div>
+    </div> <!-- End id "container" -->
+
+  </body>
+</html>
