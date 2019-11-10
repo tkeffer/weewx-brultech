@@ -502,7 +502,9 @@ class Brultech(weewx.drivers.AbstractDevice):
         while True:
             packet = self.packet_obj.get_packet()
             yield packet
-            time.sleep(self.poll_interval)
+            t = time.time()
+            target_time = int(t / self.poll_interval + 1) * self.poll_interval
+            time.sleep(target_time - t)
 
     def getTime(self):
         """Get the time on the Brultech device."""
