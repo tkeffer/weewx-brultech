@@ -33,11 +33,15 @@ That's it!
 ## Manually configuring WeeWX
 
 ### Copy files
-Put the file `brultech.py` in the `user` subdirectory. Typically,
+Put the files `brultech.py` and `gem_schema.py` in the `user` subdirectory. Typically,
 
 ```shell script
-cp brultech.py /home/weewx/bin/user/brultech.py
+cp bin/user/brultech.py /home/weewx/bin/user
+cp bin/user/gem_schema.py /home/weewx/bin/user
 ```
+
+Copy the `Power` skin over:
+cp -r skins/Power /home/weewx/skins
 
 ### Configure `weewx.conf`
 
@@ -122,7 +126,7 @@ under section `[Station]`, to `Brultech`:
             manager = weewx.manager.DaySummaryManager
             # The schema defines the structure of the database.
             # It is *only* used when the database is created.
-            schema = gem_schema.schema
+            schema = user.gem_schema.schema
     ```
 
 4. __Configure new database__
@@ -140,33 +144,59 @@ under section `[Station]`, to `Brultech`:
    
 5. __Use the new binding__ 
 
+    There are two places where the new binding must be specified: in `[StdArchive]` and
+    in `[StdReport]`.
+    
     Under stanza `[StdArchive]`, set the option `data_binding` to `bt_binding`:
     
     ```ini
-   [StdArchive]
+    [StdArchive]
 
-   ...
+        ...
+   
+        data_binding = bt_binding         
+   ```
+   
+   Under stanza `[StdReport]`, set the optoin `data_binding` to `bt_binding`:
+   
+    ```ini
+   [StdReport]
+
+        ...
    
         data_binding = bt_binding         
    ```
  
- 6. __Make sure the configuration service runs__
+ 6. __Activate the `Power` skin__
  
- Because of its many specialized types, the Brultech driver requires setting up some custom
+    Add a subsection to `[StdReport]` for the `Power` skin:
+    
+    ```ini
+    [StdReport]
+    
+        ...
+    
+        [[PowerReport]]
+            skin = Power
+            enable = True
+    ```
+ 7. __Make sure the configuration service runs__
+ 
+     Because of its many specialized types, the Brultech driver requires setting up some custom
  configurations. This is done by the service `brultech.BrultechService`. You must
  add it to the list of services to run by adding it to the end of the `process_services`. So, now
  your `[Engine]` section looks something like this: 
  
- ```ini
- [Engine]
-
-    [[Services]]
-        # This section specifies the services that should be run. They are
-        # grouped by type, and the order of services within each group
-        # determines the order in which the services will be run.
-        prep_services = weewx.engine.StdTimeSynch,
-        data_services = ,
-        process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate, user.brultech.BrultechService
+     ```ini
+     [Engine]
+    
+        [[Services]]
+            # This section specifies the services that should be run. They are
+            # grouped by type, and the order of services within each group
+            # determines the order in which the services will be run.
+            prep_services = weewx.engine.StdTimeSynch,
+            data_services = ,
+            process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate, user.brultech.BrultechService
 
         ...
 ```

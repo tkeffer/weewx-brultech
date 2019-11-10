@@ -666,6 +666,10 @@ class BTAccumConfig(object):
                or count_re.match(key)
 
 
+# ===============================================================================
+#                   Classes for the WeeWX XTypes system
+# ===============================================================================
+
 class BTObsGroupDict(object):
     """Fake dictionary that, when keyed with Brultech observation types, returns
     the unit group it belongs to.
