@@ -696,10 +696,14 @@ class BTObsGroupDict(object):
                 return None
             group = "group%s" % key[underscore:]
             return group
+        else:
+            # Don't know what it is. Raise KeyError
+            raise KeyError(key)
 
     def __contains__(self, key):
         global volt_re, temperature_re, energy2_re, count_re, power_re
-        return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial') \
+        return key == 'time_created' \
+               or key == 'secs' \
                or volt_re.match(key) \
                or temperature_re.match(key) \
                or energy2_re.match(key) \
