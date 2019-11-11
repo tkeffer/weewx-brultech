@@ -184,7 +184,7 @@ under section `[Station]`, to `Brultech`:
  
      Because of its many specialized types, the Brultech driver requires setting up some custom
  configurations. This is done by the service `brultech.BrultechService`. You must
- add it to the list of services to run by adding it to the end of the `process_services`. So, now
+ add it to the list of services to run by adding it to `data_services`. So, now
  your `[Engine]` section looks something like this: 
  
      ```ini
@@ -195,8 +195,7 @@ under section `[Station]`, to `Brultech`:
             # grouped by type, and the order of services within each group
             # determines the order in which the services will be run.
             prep_services = weewx.engine.StdTimeSynch,
-            data_services = ,
-            process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate, user.brultech.BrultechService
-
-        ...
+            data_services = user.brultech.BrultechService
+            process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate
+            ...
 ```
