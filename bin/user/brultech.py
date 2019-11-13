@@ -611,13 +611,20 @@ def extract_seq(buf, N, nbyte, tag):
 
 # Adapted from btmon.py
 def _mktemperature(b):
-    """Temperature is held in two bytes, little-endian order. The sign is held in the upper bit of the second byte
-    (i.e., it the value is *not* encoded using two's complement)."""
-    # Calculate the value
+    """Decode temperature from a 2 element bytearray"""
+
+    # Temperature is held in two bytes, little-endian order. The value needs to be divided by 2, as per the appendix
+    # "Binary Packet Fields", in the Brultech document "GEM Packet Format" (GEM-PKT, Ver 2.1). The sign is held in the
+    # upper bit of the second byte (NB: this is different from the more usual way of storing negative numbers using
+    # two's complement).
+
+    # Calculate the value and divide by 2
     t = ((b[1] & 0x7f) << 8 | b[0]) / 2.0
+
     # Check the sign
     if b[1] & 0x80:
         t = -t
+
     return t
 
 
