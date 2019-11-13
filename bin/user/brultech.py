@@ -51,7 +51,7 @@ DEFAULTS_INI = u"""
     stale = 1800
     
     # How often to poll the device for data
-    poll_interval = 5
+    poll_interval = 10
 
     # Max number of channels to emit. Limit is set by hardware (48 for GEM).
     max_channels = 32
@@ -71,7 +71,7 @@ DEFAULTS_INI = u"""
     
     # The following is for socket connections: 
     [[socket]]
-        host = 192.168.1.100
+        host = 192.168.1.104
         port = 8083
         timeout = 20
         # After sending a command, how long to wait before looking for a response    
@@ -879,6 +879,7 @@ class BrultechService(weewx.engine.StdService):
 
 if __name__ == '__main__':
     import weeutil.logger
+    from weeutil.weeutil import to_sorted_string
 
     weewx.debug = 2
 
@@ -888,4 +889,4 @@ if __name__ == '__main__':
     device.setTime()
 
     for pkt in device.genLoopPackets():
-        print(pkt)
+        print(to_sorted_string(pkt))
