@@ -13,7 +13,7 @@ simple, this driver makes two assumptions:
 This makes it pretty easy to configure the device:
 
 1. Set the GEM to "server mode".
-Using a browser, connect to your GEM (http://192.168.1.101, in my case) 
+Using a browser, connect to your GEM (http://192.168.1.104, in my case) 
 and go to the "Application Settings" page. 
 Set it to server mode, using port 8083:
 
@@ -41,7 +41,9 @@ cp bin/user/gem_schema.py /home/weewx/bin/user
 ```
 
 Copy the `Power` skin over:
+```shell script
 cp -r skins/Power /home/weewx/skins
+```
 
 ### Configure `weewx.conf`
 
@@ -81,7 +83,7 @@ This section is about manually configuring the configuration file, `weewx.conf`.
     
         # The following is for socket connections: 
         [[socket]]
-            host = 192.168.1.100
+            host = 192.168.1.104
             port = 8083
             timeout = 20
             # After sending a command, how long to wait before looking for a response    
