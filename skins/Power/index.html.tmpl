@@ -19,6 +19,15 @@
         window.location=urlname;
       }
     </script>
+    <script type="text/javascript">
+      function openFile(date)
+      {
+        var url = "Summary-";
+        url = url + date;
+        url = url + ".txt";
+        window.location=url;
+      }
+    </script>
   </head>
 
   <body>
@@ -179,6 +188,14 @@
         <input type="button" value="    Week     " onclick="openURL('week.html')" />
         <input type="button" value="    Month    " onclick="openURL('month.html')" />
         <input type="button" value="    Year     " onclick="openURL('year.html')" />
+        <p>Monthly summary:&nbsp;
+        <select NAME=summaryselect onchange="openFile(value)">
+        #for $monthYear in $SummaryByMonth
+            <option value="$monthYear">$monthYear</option>
+        #end for
+	    <option selected>-Select month-</option>
+        </select>
+        </p>
       </div>
     </div>
 
