@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2013-2019 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2013-2020 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -39,7 +39,7 @@ from weewx.units import ValueTuple
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '0.1.0'
+DRIVER_VERSION = '0.2.0'
 
 DEFAULTS_INI = u"""
 [Brultech]
@@ -387,7 +387,7 @@ class GEMBin48Net(BTBase):
             'ser_no': struct.unpack('>H', byte_buf[485:487])[0],
             'unit_id': byte_buf[488],
             'secs': unpack(byte_buf[585:588])
-            }
+        }
 
         # Form the full, formatted serial number:
         packet['serial'] = '%03d%05d' % (packet['unit_id'], packet['ser_no'])
@@ -885,6 +885,7 @@ class BrultechService(weewx.engine.StdService):
 
 
 if __name__ == '__main__':
+    import optparse
     import weeutil.logger
     from weeutil.weeutil import to_sorted_string
 
@@ -892,7 +893,38 @@ if __name__ == '__main__':
 
     weeutil.logger.setup('brultech', {})
 
-    device = loader({}, None)
+    usage = """Usage: python -m brultech --help
+       python -m brultech --version
+       python -m brultech [--host=HOST] [--port=PORT]"""
+
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option('--version', action='store_true',
+                      help='Display driver version')
+    parser.add_option('--host', default='192.168.1.7',
+                      help='Host. Default is "192.168.1.7"',
+                      metavar="HOST")
+    parser.add_option('--port', type="int", default=8083,
+                      help='Serial port to use. Default is "8083"',
+                      metavar="PORT")
+    (options, args) = parser.parse_args()
+
+    if options.version:
+        print("Brultech driver version %s" % DRIVER_VERSION)
+        exit(0)
+
+    print("Using host '%s' on port %d" % (options.host, options.port))
+
+    config_dict = {
+        'Brultech': {
+            'connection': 'socket',
+            'socket': {
+                'host': options.host,
+                'port': options.port
+            }
+        }
+    }
+
+    device = loader(config_dict, None)
     device.setTime()
 
     for pkt in device.genLoopPackets():
