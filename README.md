@@ -75,7 +75,7 @@ This section is about manually configuring the configuration file, `weewx.conf`.
         # Max number of times to try an I/O operation before declaring an error
         max_tries = 3
     
-        driver = user.brultech.Brultech
+        driver = user.brultech
 
         # The type of connection to use. It should match a section below. 
         # Right now, only 'socket' is supported.
@@ -94,7 +94,7 @@ This section is about manually configuring the configuration file, `weewx.conf`.
 
     Be sure to set options `host` and `port` to their proper values for your network configuration.
 
-2. __Set device driver__
+2. __Set station type__
 
     Tell WeeWX to use the Brultech device driver by setting `station_type`, 
 under section `[Station]`, to `Brultech`:
@@ -171,7 +171,8 @@ under section `[Station]`, to `Brultech`:
  
  6. __Activate the `Power` skin__
  
-    Add a subsection to `[StdReport]` for the `Power` skin:
+    Add a subsection to `[StdReport]` for the `Power` skin, and activate it by
+    setting `enable` to `True`:
     
     ```ini
     [StdReport]
@@ -182,6 +183,9 @@ under section `[Station]`, to `Brultech`:
             skin = Power
             enable = True
     ```
+    Incidentally, while you're in there, you may want to deactive any "weather" skins
+    you might have --- they won't work with the data from the energy monitor!
+    
  7. __Make sure the configuration service runs__
  
      Because of its many specialized types, the Brultech driver requires setting up some custom
