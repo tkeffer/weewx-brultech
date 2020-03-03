@@ -876,9 +876,10 @@ class BrultechService(weewx.engine.StdService):
         self.bt_extends.add_power_to_packet(event.packet)
 
     def shutDown(self):
-        weewx.accum.accum_dict.remove(self.bt_accum_config)
-        weewx.units.obs_group_dict.remove(self.bt_obs_group_dict)
-        weewx.xtypes.xtypes.remove(BTExtends)
+        """Remove the extensions that were added by __init__()"""
+        weewx.accum.accum_dict.maps.remove(self.bt_accum_config)
+        weewx.units.obs_group_dict.maps.remove(self.bt_obs_group_dict)
+        weewx.xtypes.xtypes.remove(self.bt_extends)
         self.bt_accum_config = None
         self.bt_obs_group_dict = None
         self.bt_extends = None
