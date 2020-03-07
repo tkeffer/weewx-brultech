@@ -26,11 +26,13 @@ Set it to server mode, using port 8083:
 
     ![Restart Module](images/restart_module.png)
     
-    The monitor will reboot and be ready to receive commands from the driver
-    
-That's it!
+The monitor will reboot and be ready to receive commands from the driver.
+That's it for the monitor. Next step is to configure WeeWX.
 
 ## Manually configuring WeeWX
+
+Unfortunately, at this point, there is no automatic installer for weepwr. Instead,
+you will have to manually configure WeeWX.
 
 ### Copy files
 Put the files `brultech.py` and `gem_schema.py` in the `user` subdirectory. Typically,

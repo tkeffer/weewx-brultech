@@ -1,1 +1,0 @@
-Calculations suitable for the oil furnace.
