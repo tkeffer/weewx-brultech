@@ -39,7 +39,7 @@ from weewx.units import ValueTuple
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '0.2.0'
+DRIVER_VERSION = '0.2.1'
 
 DEFAULTS_INI = u"""
 [Brultech]
@@ -757,7 +757,6 @@ class BTExtends(weewx.xtypes.XType):
 
         This version only knows how to calculate power from energy2.
         """
-        self.prev_record = None
 
         # Get the corresponding energy name from the power name. This replaces something like ch5_a_power
         # with ch5_a_energy2:
@@ -772,11 +771,13 @@ class BTExtends(weewx.xtypes.XType):
 
         prev_ts = record['dateTime'] - record['interval'] * 60
         # See if we've cached a record with the right timestamp
-        if not self.prev_record or record['dateTime'] != prev_ts:
+        if not self.prev_record or self.prev_record['dateTime'] != prev_ts:
             # No. Go get it.
             self.prev_record = db_manager.getRecord(prev_ts)
 
-        if record[energy2_name] is not None and self.prev_record.get(energy2_name) is not None:
+        if record[energy2_name] is not None \
+                and self.prev_record \
+                and self.prev_record.get(energy2_name) is not None:
             deriv = (record[energy2_name] - self.prev_record.get(energy2_name)) \
                     / (record['dateTime'] - self.prev_record['dateTime'])
         else:
