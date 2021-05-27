@@ -61,7 +61,7 @@ This section is about manually configuring the configuration file, `weewx.conf`.
         # See README.md for instructions on how to configure the Brultech devices!!
     
         # Power is computed as the difference between energy records. How old a 
-        # record can be and still used for this calculation:
+        # record can be and still be used for this calculation:
         stale = 1800
     
         # How often to poll the device for data
