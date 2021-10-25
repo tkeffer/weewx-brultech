@@ -1,19 +1,15 @@
 #
-#    Copyright (c) 2013-2019 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2013-2021 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
-# ===============================================================================
-# This is a list containing the default schema of the database used by GEM.
-#
-# You may trim this list of any unused types if you wish, but it will not result
-# in as much space savings as you may think --- most of the space is taken up by
-# the primary key indexes (type "dateTime").
-# ===============================================================================
 
-max_current_channels = 16
-max_temperature_channels = 8
-max_pulse_channels = 4
+""" The default schema for the Brultech GEM. """
+
+# Reducing these parameters to the minimum you're likely to need can save considerable database space:
+MAX_CURRENT_CHANNELS = 32
+MAX_TEMPERATURE_CHANNELS = 8
+MAX_PULSE_CHANNELS = 4
 
 table = [
             ('dateTime', 'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
@@ -21,9 +17,9 @@ table = [
             ('interval', 'INTEGER NOT NULL'),
             ('ch1_volt', 'REAL')
             ] + \
-        [('ch%d_a_energy2' % (i + 1), 'INTEGER') for i in range(max_current_channels)] + \
-        [('ch%d_temperature' % (i + 1), 'REAL') for i in range(max_temperature_channels)] + \
-        [('ch%d_count' % (i + 1), 'INTEGER') for i in range(max_pulse_channels)]
+        [('ch%d_a_energy2' % (i + 1), 'INTEGER') for i in range(MAX_CURRENT_CHANNELS)] + \
+        [('ch%d_temperature' % (i + 1), 'REAL') for i in range(MAX_TEMPERATURE_CHANNELS)] + \
+        [('ch%d_count' % (i + 1), 'INTEGER') for i in range(MAX_PULSE_CHANNELS)]
 
 day_summaries = [(e[0], 'scalar') for e in table if e[0] not in ('dateTime', 'usUnits', 'interval')]
 

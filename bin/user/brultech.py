@@ -39,7 +39,7 @@ from weewx.units import ValueTuple
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '0.2.1'
+DRIVER_VERSION = '1.0.0'
 
 DEFAULTS_INI = u"""
 [Brultech]
@@ -82,6 +82,7 @@ DEFAULTS_INI = u"""
 """
 
 brultech_defaults = configobj.ConfigObj(io.StringIO(DEFAULTS_INI))
+del io
 
 
 def loader(config_dict, engine):
@@ -95,6 +96,10 @@ def loader(config_dict, engine):
 
 def configurator_loader(config_dict):  # @UnusedVariable
     return BrultechConfigurator()
+
+
+def confeditor_loader():
+    return BrultechConfEditor()
 
 
 # ===============================================================================
@@ -577,13 +582,42 @@ class BrultechConfigurator(weewx.drivers.AbstractConfigurator):
 
     @staticmethod
     def show_info(device, dest=sys.stdout):
-        """Query the configuration of the Vantage, printing out status
+        """Query the configuration of the Brultech, printing out status
         information"""
 
         print("Querying...")
-        all = device.get_info()
-        print(all, file=dest)
+        info = device.get_info()
+        print(info, file=dest)
 
+
+# =============================================================================
+#                      Class BrultechConfEditor
+# =============================================================================
+
+class BrultechConfEditor(weewx.drivers.AbstractConfEditor):
+    @property
+    def default_stanza(self):
+        return DEFAULTS_INI
+
+    def prompt_for_settings(self):
+        settings = self.existing_options
+        print("Specify the IP address (e.g., 192.168.0.10) or hostname of the Brultech monitor.")
+        try:
+            default_host = self.existing_options['socket']['host']
+        except KeyError:
+            default_host = brultech_defaults['Brultech']['socket']['host']
+        host = self._prompt('host', default_host)
+        print("Specify the port")
+        try:
+            default_port = self.existing_options['socket']['port']
+        except KeyError:
+            default_port = brultech_defaults['Brultech']['socket']['port']
+        port = self._prompt('port', default_port)
+        if 'socket' not in settings:
+            settings['socket'] = brultech_defaults['Brultech']['socket'].dict()
+        settings['socket']['host'] = host
+        settings['socket']['port'] = port
+        return settings
 
 # ===============================================================================
 #                            Packet Utilities
