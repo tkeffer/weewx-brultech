@@ -1,29 +1,26 @@
 #errorCatcher Echo
-#set $YM="%Y %m"
+## The format to use for the date:
 #set $D=" %d"
-#set $M=" %b"
-#set $Time=" %H:%M"
-#set $NODAY=" N/A"
-#set $Energy="%9.1f"
-#set $Volume="%9.1f"
+## The format to use for energy:
+#set $Energy="%8.1f"
+## The string to use for no value:
 #set $NONE="   N/A"
                    MONTHLY POWER CONSUMPTION SUMMARY for $month_name $year_name
 
 NAME: $station.location
 ELEV: $station.altitude    LAT: $station.latitude[0]-$station.latitude[1] $station.latitude[2]    LONG: $station.longitude[0]-$station.longitude[1] $station.longitude[2]
 
-                                       ENERGY ($unit.label.ch8_a_energy2.strip())
+                                 ENERGY ($unit.label.ch8_a_energy2.strip())
 
-        TOTAL            BASEMENT                          HW         HOT  UPSTAIRS     OIL       OIL
-DAY     POWER     DRYER  SUBPANEL    OFFICE    FRIDGE    HEATER       TUB  SUBPANEL   FURNACE   GALLONS
---------------------------------------------------------------------------------------------------------
+DAY     CH-1     CH-2     CH-3     CH-4     CH-5     CH-6     CH-7     CH-8
+---------------------------------------------------------------------------
 #for $day in $month.days
-#if $day.ch8_a_energy2.count.raw
-$day.dateTime.format($D) $day.ch8_a_energy2.diff.nolabel($Energy,$NONE) $day.ch1_a_energy2.diff.nolabel($Energy,$NONE) $day.ch2_a_energy2.diff.nolabel($Energy,$NONE) $day.ch3_a_energy2.diff.nolabel($Energy,$NONE) $day.ch4_a_energy2.diff.nolabel($Energy,$NONE) $day.ch5_a_energy2.diff.nolabel($Energy,$NONE) $day.ch6_a_energy2.diff.nolabel($Energy,$NONE) $day.ch7_a_energy2.diff.nolabel($Energy,$NONE) $day.ch16_a_energy2.diff.nolabel($Energy,$NONE) $day.oil_volume.sum.nolabel($Volume)
+#if $day.ch1_a_energy2.count.raw
+$day.dateTime.format($D) $day.ch1_a_energy2.diff.nolabel($Energy,$NONE) $day.ch2_a_energy2.diff.nolabel($Energy,$NONE) $day.ch3_a_energy2.diff.nolabel($Energy,$NONE) $day.ch4_a_energy2.diff.nolabel($Energy,$NONE) $day.ch5_a_energy2.diff.nolabel($Energy,$NONE) $day.ch6_a_energy2.diff.nolabel($Energy,$NONE) $day.ch7_a_energy2.diff.nolabel($Energy,$NONE) $day.ch8_a_energy2.diff.nolabel($Energy,$NONE)
 #else
 $day.dateTime.format($D)
 #end if
 #end for
---------------------------------------------------------------------------------------------------------
-    $month.ch8_a_energy2.diff.nolabel($Energy,$NONE) $month.ch1_a_energy2.diff.nolabel($Energy,$NONE) $month.ch2_a_energy2.diff.nolabel($Energy,$NONE) $month.ch3_a_energy2.diff.nolabel($Energy,$NONE) $month.ch4_a_energy2.diff.nolabel($Energy,$NONE) $month.ch5_a_energy2.diff.nolabel($Energy,$NONE) $month.ch6_a_energy2.diff.nolabel($Energy,$NONE) $month.ch7_a_energy2.diff.nolabel($Energy,$NONE) $month.ch16_a_energy2.diff.nolabel($Energy,$NONE) $month.oil_volume.sum.nolabel($Volume)
+---------------------------------------------------------------------------
+    $month.ch1_a_energy2.diff.nolabel($Energy,$NONE) $month.ch2_a_energy2.diff.nolabel($Energy,$NONE) $month.ch3_a_energy2.diff.nolabel($Energy,$NONE) $month.ch4_a_energy2.diff.nolabel($Energy,$NONE) $month.ch5_a_energy2.diff.nolabel($Energy,$NONE) $month.ch6_a_energy2.diff.nolabel($Energy,$NONE) $month.ch7_a_energy2.diff.nolabel($Energy,$NONE) $month.ch8_a_energy2.diff.nolabel($Energy,$NONE)
 

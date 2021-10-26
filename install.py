@@ -84,6 +84,10 @@ BRULTECH_DEFAULTS = u"""
         skin = Power
         enable = True
         data_binding = bt_binding                                    
+        [[[Units]]]
+            [[[[Groups]]]]
+                group_energy2 = kilowatt_hour
+            
 """
 
 defaults_dict = configobj.ConfigObj(StringIO(BRULTECH_DEFAULTS), encoding='utf-8')
@@ -98,6 +102,7 @@ class WeepwrInstaller(ExtensionInstaller):
             author="Thomas Keffer",
             author_email="tkeffer@gmail.com",
             config=defaults_dict,
+            data_services='user.brultech.BrultechService',
             files=[('bin/user',
                     ['bin/user/brultech.py',
                      'bin/user/gem_schema.py']),
@@ -110,7 +115,8 @@ class WeepwrInstaller(ExtensionInstaller):
                      'skins/Power/skin.conf',
                      'skins/Power/Summary-YYYY-MM.txt.tmpl',
                      'skins/Power/week.html.tmpl',
-                     'skins/Power/weewx.css'])
+                     'skins/Power/weewx.css',
+                     'skins/Power/year.html.tmpl'])
                    ]
         )
 

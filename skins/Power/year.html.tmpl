@@ -8,7 +8,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <title>$station.location Weekly energy summary</title>
+    <title>$station.location Year energy summary</title>
     <link rel="stylesheet" type="text/css" href="weewx.css"/>
     <link rel="icon" type="image/png" href="favicon.ico" />
     <script type="text/javascript">
@@ -23,7 +23,7 @@
     <div id="container">
       <div id="masthead">
         <h1>$station.location</h1>
-        <h2>Energy Summary for the Week</h2>
+        <h2>Energy Summary for the Year</h2>
           <h2>$current.dateTime</h2>
       </div>
 
@@ -31,42 +31,42 @@
 
         <div class="stats">
           <div class="stats_header">
-            This Week
+            This Year
           </div>
 
           <table>
             <tbody>
               <tr>
                 <td class="stats_label">Channel 1</td>
-                <td class="stats_data">$week.ch1_a_energy2.diff</td>
+                <td class="stats_data">$year.ch1_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 2</td>
-                <td class="stats_data">$week.ch2_a_energy2.diff</td>
+                <td class="stats_data">$year.ch2_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 3</td>
-                <td class="stats_data">$week.ch3_a_energy2.diff</td>
+                <td class="stats_data">$year.ch3_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 4</td>
-                <td class="stats_data">$week.ch4_a_energy2.diff</td>
+                <td class="stats_data">$year.ch4_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 5</td>
-                <td class="stats_data">$week.ch5_a_energy2.diff</td>
+                <td class="stats_data">$year.ch5_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 6</td>
-                <td class="stats_data">$week.ch6_a_energy2.diff</td>
+                <td class="stats_data">$year.ch6_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 7</td>
-                <td class="stats_data">$week.ch7_a_energy2.diff</td>
+                <td class="stats_data">$year.ch7_a_energy2.diff</td>
               </tr>
               <tr>
                 <td class="stats_label">Channel 8</td>
-                <td class="stats_data">$week.ch8_a_energy2.diff</td>
+                <td class="stats_data">$year.ch8_a_energy2.diff</td>
               </tr>
             </tbody>
           </table>
@@ -76,19 +76,19 @@
       </div> <!-- End class "stats_group" -->
 
       <div id="content">
-
+        
         <div class="header">
-          <h3>Weekly Statistics and Plots</h3>
+          <h3>Yearly Statistics and Plots</h3>
         </div>
         <div id="plots">
-          <img src="week_ch1_power.png"    alt="Channel 1" />
-          <img src="week_ch2_power.png"    alt="Channel 2" />
-          <img src="week_ch3_power.png"    alt="Channel 3" />
-          <img src="week_ch4_power.png"    alt="Channel 4" />
-          <img src="week_ch5_power.png"    alt="Channel 5" />
-          <img src="week_ch6_power.png"    alt="Channel 6" />
-          <img src="week_ch7_power.png"    alt="Channel 7" />
-          <img src="week_ch8_power.png"    alt="Channel 8" />
+          <img src="year_ch1_power.png"    alt="Channel 1" />
+          <img src="year_ch2_power.png"    alt="Channel 2" />
+          <img src="year_ch3_power.png"    alt="Channel 3" />
+          <img src="year_ch4_power.png"    alt="Channel 4" />
+          <img src="year_ch5_power.png"    alt="Channel 5" />
+          <img src="year_ch6_power.png"    alt="Channel 6" />
+          <img src="year_ch7_power.png"    alt="Channel 7" />
+          <img src="year_ch8_power.png"    alt="Channel 8" />
         </div>
       </div> <!-- End id "content" -->
 

@@ -1,15 +1,13 @@
+## Copyright 2009-2021 Tom Keffer
+## Distributed under terms of GPLv3.  See LICENSE.txt for your rights.
 #errorCatcher Echo
 ##
-## Specifying an encoding of UTF-8 is usually safe, but if your text is 
-## actually in Latin-1, then you should replace the string "UTF-8" with "latin-1"
-## If you do this, you should also change the 'Content-Type' metadata below.
 #encoding UTF-8
 ##
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head profile="http://www.w3.org/2005/10/profile">
-    ## This choice should match the #encoding directive above
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
     <title>$station.location Monthly energy summary</title>
     <link rel="stylesheet" type="text/css" href="weewx.css"/>
     <link rel="icon" type="image/png" href="favicon.ico" />
@@ -25,7 +23,7 @@
     <div id="container">
       <div id="masthead">
         <h1>$station.location</h1>
-        <h2>Monthly Energy Summary</h2>
+        <h2>Energy Summary for the Month</h2>
           <h2>$current.dateTime</h2>
       </div>
 
@@ -39,40 +37,36 @@
           <table>
             <tbody>
               <tr>
-                <td class="stats_label">All house</td>
-                <td class="stats_data">$month.ch8_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Dryer</td>
+                <td class="stats_label">Channel 1</td>
                 <td class="stats_data">$month.ch1_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">Basement subpanel</td>
+                <td class="stats_label">Channel 2</td>
                 <td class="stats_data">$month.ch2_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">tk office</td>
+                <td class="stats_label">Channel 3</td>
                 <td class="stats_data">$month.ch3_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">Fridge</td>
+                <td class="stats_label">Channel 4</td>
                 <td class="stats_data">$month.ch4_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">Hot water heater</td>
+                <td class="stats_label">Channel 5</td>
                 <td class="stats_data">$month.ch5_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">Hot tub</td>
+                <td class="stats_label">Channel 6</td>
                 <td class="stats_data">$month.ch6_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">Upstairs subpanel</td>
+                <td class="stats_label">Channel 7</td>
                 <td class="stats_data">$month.ch7_a_energy2.diff</td>
               </tr>
               <tr>
-                <td class="stats_label">Oil furnace</td>
-                <td class="stats_data">$month.ch16_a_energy2.diff</td>
+                <td class="stats_label">Channel 8</td>
+                <td class="stats_data">$month.ch8_a_energy2.diff</td>
               </tr>
             </tbody>
           </table>
@@ -87,15 +81,14 @@
           <h3>Monthly Statistics and Plots</h3>
         </div>
         <div id="plots">
-          <img src="month_ch8_power.png"    alt="All house" />
-          <img src="month_ch1_power.png"    alt="Dryer" />
-          <img src="month_ch2_power.png"    alt="Basement subpanel" />
-          <img src="month_ch3_power.png"    alt="tk Office" />
-          <img src="month_ch4_power.png"    alt="Fridge" />
-          <img src="month_ch5_power.png"    alt="Hot water heater" />
-          <img src="month_ch6_power.png"    alt="Hot tub" />
-          <img src="month_ch7_power.png"    alt="Upstairs subpanel" />
-          <img src="month_ch16_power.png"   alt="Furnace" />
+          <img src="month_ch1_power.png"    alt="Channel 1" />
+          <img src="month_ch2_power.png"    alt="Channel 2" />
+          <img src="month_ch3_power.png"    alt="Channel 3" />
+          <img src="month_ch4_power.png"    alt="Channel 4" />
+          <img src="month_ch5_power.png"    alt="Channel 5" />
+          <img src="month_ch6_power.png"    alt="Channel 6" />
+          <img src="month_ch7_power.png"    alt="Channel 7" />
+          <img src="month_ch8_power.png"    alt="Channel 8" />
         </div>
       </div> <!-- End id "content" -->
 
