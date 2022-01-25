@@ -50,9 +50,9 @@
     #set $show_plot = 0
     #*
       The plot name is just the concatenation of the period and the plot group.
-      For example, 'year' + 'tempdew' yields 'yeartempdew'.
+      For example, 'year' + 'tempdew' yields 'year_tempdew'.
     *#
-    #set $plot_name = $period + $plot_group
+    #set $plot_name = $period + '_' + $plot_group
     #for obs in $getobs($plot_name)
       #if getattr($recent, $obs).has_data
         #set $show_plot = 1
