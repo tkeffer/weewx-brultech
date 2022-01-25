@@ -1,0 +1,33 @@
+#errorCatcher Echo
+## The format to use for the date:
+#set $D=" %d"
+## The format to use for energy:
+#set $Energy="%8.1f"
+## The string to use for no value:
+#set $NONE="   N/A"
+#set $observations = $DisplayOptions.get('observations_stats', ['ch1_a_energy2'])
+                   MONTHLY POWER CONSUMPTION SUMMARY for $month_name $year_name
+
+NAME: $station.location
+ELEV: $station.altitude    LAT: $station.latitude[0]-$station.latitude[1] $station.latitude[2]    LONG: $station.longitude[0]-$station.longitude[1] $station.longitude[2]
+
+                                 ENERGY ($unit.label.ch1_a_energy2.strip())
+
+DAY     CH-1     CH-2     CH-3     CH-4     CH-5     CH-6     CH-7     CH-8
+---------------------------------------------------------------------------
+#for $day in $month.days
+#if $day.ch1_a_energy2.has_data
+$day.dateTime.format($D)#slurp
+#for $x in $observations
+ $getattr($day, $x).diff.nolabel($Energy,$NONE)#slurp
+#end for
+
+#else
+$day.dateTime.format($D)
+#end if
+#end for
+---------------------------------------------------------------------------
+      #slurp
+#for $x in $observations
+ $getattr($month, $x).diff.nolabel($Energy,$NONE)#slurp
+#end for

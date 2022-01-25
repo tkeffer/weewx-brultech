@@ -1,196 +1,78 @@
-## Copyright 2009-2021 Tom Keffer
+## Copyright 2009-2018 Tom Keffer, Matthew Wall
 ## Distributed under terms of GPLv3.  See LICENSE.txt for your rights.
 #errorCatcher Echo
-##
-#encoding UTF-8
-##
+
+#set $periods = $DisplayOptions.get('periods', ['day', 'week', 'month', 'year'])
+#set $plot_groups = $DisplayOptions.get('plot_groups', ['ch1_a_power'])
+
+## use this span to determine whether there are any data to consider.
+#set $recent=$span($day_delta=30, boundary='midnight')
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="$lang">
   <head>
     <meta charset="UTF-8">
-    <title>$station.location current power usage</title>
-    <link rel="stylesheet" type="text/css" href="weewx.css"/>
+    <title>$station.location</title>
     <link rel="icon" type="image/png" href="favicon.ico" />
-    <script type="text/javascript">
-      function openURL(urlname)
-      {
-        window.location=urlname;
-      }
-    </script>
-    <script type="text/javascript">
-      function openFile(date)
-      {
-        var url = "Summary-";
-        url = url + date;
-        url = url + ".txt";
-        window.location=url;
-      }
-    </script>
+    <link rel="stylesheet" type="text/css" href="power.css"/>
+    #if $station.station_url
+    <link rel="canonical" href="$station.station_url/$filename" />
+    #end if
+    <script src="power.js"></script>
   </head>
 
-  <body>
-    <div id="container">
-      <div id="masthead">
-        <h1>$station.location</h1>
-        <h2>Current power usage</h2>
-          <h2>$current.dateTime</h2>
+  <body onload="setup();">
+    #include "titlebar.inc"
+    
+    <div id="contents">
+      <div id="widget_group">
+        #include "current.inc"
+        #include "hilo.inc"
+        #include "about.inc"
       </div>
 
-      <div id="stats_group">
-
-        ## The following section is for "Current" readings.
-        ## Add new channels, modify labels, and reorder as you see fit.
-        <div class="stats">
-          <div class="stats_header">
-            Average over last 5 minutes
+      <div id="plot_group">
+        <div id="history_widget" class="widget">
+          <div id="plot_title" class="widget_title">$gettext("History"):&nbsp;&nbsp;
+            <a class="button_selected" id="button_history_day"
+               onclick="choose_history('day')">$gettext("Day")</a>
+            <a class="button" id="button_history_week"
+               onclick="choose_history('week')">$gettext("Week")</a>
+            <a class="button" id="button_history_month"
+               onclick="choose_history('month')">$gettext("Month")</a>
+            <a class="button" id="button_history_year"
+               onclick="choose_history('year')">$gettext("Year")</a>
           </div>
 
-          <table>
-            <tbody>
-              <tr>
-                <td class="stats_label">Channel 1</td>
-                <td class="stats_data">$current.ch1_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 2</td>
-                <td class="stats_data">$current.ch2_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 3</td>
-                <td class="stats_data">$current.ch3_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 4</td>
-                <td class="stats_data">$current.ch4_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 5</td>
-                <td class="stats_data">$current.ch5_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 6</td>
-                <td class="stats_data">$current.ch6_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 7</td>
-                <td class="stats_data">$current.ch7_a_power</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 8</td>
-                <td class="stats_data">$current.ch8_a_power</td>
-              </tr>
-            </tbody>
-          </table>
-        </div> <!--End class "stats" -->
-
-        <p>&nbsp;</p>
-
-        ## This section is for energy consumption "since midnight".
-        <div class="stats">
-          <div class="stats_header">
-            Since midnight
+#for period in $periods
+          <div id="history_${period}" class="plot_container" style="display:none">
+  #for plot_group in $plot_groups
+    #set $show_plot = 0
+    #*
+      The plot name is just the concatenation of the period and the plot group.
+      For example, 'year' + 'tempdew' yields 'yeartempdew'.
+    *#
+    #set $plot_name = $period + $plot_group
+    #for obs in $getobs($plot_name)
+      #if getattr($recent, $obs).has_data
+        #set $show_plot = 1
+      #end if
+    #end for
+    #if $show_plot
+            <img src="${plot_name}.png" alt="${plot_name}"/>
+    #end if
+  #end for
           </div>
+#end for
 
-          <table>
-            <tbody>
-              <tr>
-                <td class="stats_label">Channel 1</td>
-                <td class="stats_data">$day.ch1_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 2</td>
-                <td class="stats_data">$day.ch2_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 3</td>
-                <td class="stats_data">$day.ch3_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 4</td>
-                <td class="stats_data">$day.ch4_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 5</td>
-                <td class="stats_data">$day.ch5_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 6</td>
-                <td class="stats_data">$day.ch6_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 7</td>
-                <td class="stats_data">$day.ch7_a_energy2.diff</td>
-              </tr>
-              <tr>
-                <td class="stats_label">Channel 8</td>
-                <td class="stats_data">$day.ch8_a_energy2.diff</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
-
-      </div> <!--End class "stats_group" -->
-
-      <div id="content">
-        <div id="about">
-          <div class="header">
-            About this power monitor:
-          </div>
-          <table>
-            <caption class="caption">Location</caption>
-            <tr>
-              <td class="label">Latitude:</td>
-              <td class="data">$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2]</td>
-            </tr>
-            <tr>
-              <td class="label">Longitude:</td>
-              <td class="data">$station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td>
-            </tr>
-            <tr>
-              <td class="label">Altitude:</td>
-              <td class="data">$station.altitude</td>
-            </tr>
-          </table>
-          <p>
-            This station uses a $station.hardware, controlled by
-            <a href="http://www.weewx.com">'weewx'</a>, an experimental
-            weather software system written in Python. Weewx
-            was designed to be simple, fast, and easy to understand by
-            leveraging modern software concepts.
-          </p>
-          <p>Weewx uptime:  $station.uptime<br/>
-             Server uptime: $station.os_uptime<br/>
-             weewx v$station.version</p>
-        </div> <!-- End id "about" -->
-
-        <div id="plots">
-          <img src="day_ch1_power.png"    alt="Channel 1" />
-          <img src="day_ch2_power.png"    alt="Channel 2" />
-          <img src="day_ch3_power.png"    alt="Channel 3" />
-          <img src="day_ch4_power.png"    alt="Channel 4" />
-          <img src="day_ch5_power.png"    alt="Channel 5" />
-          <img src="day_ch6_power.png"    alt="Channel 6" />
-          <img src="day_ch7_power.png"    alt="Channel 7" />
-          <img src="day_ch8_power.png"    alt="Channel 8" />
-        </div> <!-- End id "plots" -->
-      </div> <!-- End id "content" -->
-
-      <div id="navbar">
-        <input type="button" value="   Current   " onclick="openURL('index.html')" />
-        <input type="button" value="    Week     " onclick="openURL('week.html')" />
-        <input type="button" value="    Month    " onclick="openURL('month.html')" />
-        <input type="button" value="    Year     " onclick="openURL('year.html')" />
-        <p>Monthly summary:&nbsp;
-        <select NAME=summaryselect onchange="openFile(value)">
-        #for $monthYear in $SummaryByMonth
-            <option value="$monthYear">$monthYear</option>
-        #end for
-	    <option selected>-Select month-</option>
-        </select>
-        </p>
       </div>
     </div>
 
-</body>
+    <p class="footnote">
+      $gettext("This station is controlled by <a href='https://weewx.com'>WeeWX</a>, an experimental weather software system written in Python.")
+    </p>
+
+  </body>
 
 </html>
