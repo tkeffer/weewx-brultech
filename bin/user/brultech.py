@@ -792,13 +792,14 @@ class BTExtends(weewx.xtypes.XType):
         This version only knows how to calculate power from energy2.
         """
 
+        # We only know how to calculate power. Ignore others.
+        if not power_re.match(obs_type):
+            raise weewx.UnknownType(obs_type)
+
         # Get the corresponding energy name from the power name. This replaces something like ch5_a_power
         # with ch5_a_energy2:
         energy2_name = obs_type.replace('power', 'energy2')
 
-        # We only know how to calculate power. Ignore others.
-        if not energy2_re.match(energy2_name):
-            raise weewx.UnknownType(obs_type)
         # We require that the energy value be in the record
         if not record or energy2_name not in record:
             raise weewx.CannotCalculate(obs_type)
@@ -831,8 +832,9 @@ class BTExtends(weewx.xtypes.XType):
         if not power_re.match(obs_type):
             raise weewx.UnknownType(obs_type)
 
-        # Get the corresponding energy name
-        energy_name = obs_type.replace('power', 'energy2')
+        # Get the corresponding energy name from the power name. This replaces something like ch5_a_power
+        # with ch5_a_energy2:
+        energy2_name = obs_type.replace('power', 'energy2')
 
         start_vec = list()
         stop_vec = list()
@@ -842,7 +844,7 @@ class BTExtends(weewx.xtypes.XType):
             raise weewx.UnknownAggregation(aggregate_type)
         else:
             # No aggregation
-            sql_str = BTExtends.SQL_TEMPLATE % {'obs_type': energy_name, 'start': timespan[0], 'stop': timespan[1]}
+            sql_str = BTExtends.SQL_TEMPLATE % {'obs_type': energy2_name, 'start': timespan[0], 'stop': timespan[1]}
             std_unit_system = None
             for record in db_manager.genSql(sql_str):
                 start_vec.append(record[0] - record[3] * 60)
