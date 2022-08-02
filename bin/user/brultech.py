@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2013-2021 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2013-2022 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -441,7 +441,13 @@ class GEMBin48NetTime(GEMBin48Net):
         # Add the embedded time:
         Y, M, D, h, m, s = byte_buf[616:622]
         time_tt = (Y + 2000, M, D, h, m, s, 0, 0, -1)
-        packet['time_created'] = int(calendar.timegm(time_tt))
+        # When the device starts for the first time, it will not have a valid
+        # time, causing a ValueError. Be prepared to catch it.
+        try:
+            packet['time_created'] = int(calendar.timegm(time_tt))
+        except ValueError:
+            # Return zero, which will force a clock synchronization.
+            packet['time_created'] = 0
 
         return packet
 
