@@ -3,7 +3,7 @@
 #
 #    See the file LICENSE.txt for your full rights.
 #
-"""Installer for Weepwr"""
+"""Installer for weewx-brultech"""
 
 from distutils.version import StrictVersion
 from io import StringIO

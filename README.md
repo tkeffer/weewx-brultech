@@ -24,13 +24,14 @@ system.
 also includes monthly energy summaries. It can easily be customized by following the directions
 in the _[WeeWX Customization Guide](http://www.weewx.com/docs/customizing.htm)_.
 
-What follows are directions for installing the extension. It consists of four parts:
-- [Configuring your Brultech monitor](#Configuring-your-Brultech-device)
-- [Installing WeeWX](#Install-WeeWX)
-- Installing the extension, either by using the WeeWX 
+What follows are directions for installing the extension. It consists of five parts:
+1. [Configuring your Brultech monitor](#Configuring-your-Brultech-device)
+2. [Installing WeeWX](#Install-WeeWX)
+3. Installing the extension, either by using the WeeWX 
 [installer](#Install-the-extension-by-using-the-WeeWX-installer),
 or [manually](#Installing-the-extension-manually).
-- [Starting up WeeWX](#Starting-WeeWX)
+4. [Select database options](#Select-database-options)
+5. [Start up WeeWX](#Starting-WeeWX)
 
 ## Configuring your Brultech device
 The Brultech energy monitors come with a bewildering array of modes and options. To keep things
@@ -306,8 +307,65 @@ under section `[Station]`, to `Brultech`:
            ...
     ```
 
+## Select database options
+The default schema works well for most applications. However, you may want to tune it for special
+cases. 
+
+Take a look in the schema's file, usually located in `/home/weewx/bin/user/gem_schema.py`, and you will see
+a number of options. The defaults generally work well. Here are their meanings
+
+
+| Option                          | Default | Meaning                                                                   |
+|---------------------------------|---------|---------------------------------------------------------------------------|
+| `MAX_CURRENT_CHANNELS`          | `32`    | How many current channels to include in the schema. Max for GEM is 32.    |
+| `MAX_TEMPERATURE_CHANNELS`      | `8`     | How many temperature channels to include in the schema. Max for GEM is 8. |
+| `MAX_PULSE_CHANNELS`            | `4`     | How many pulse (counter) channels to include. Max for GEM is 4.           |
+| `INCLUDE_ACCUMULATED_ABSOLUTE`  | `False` | Store accumulated (since device reset) absolute energy.                   |
+| `INCLUDE_ACCUMULATED_POLARIZED` | `False` | Store accumulated (since device reset) polarized energy.                  |
+| `INCLUDE_POWER_ABSOLUTE`        | `False` | Store absolute power consumed during archive period.                      |
+| `INCLUDE_POWER_POLARIZED`       | `False` | Store polarized power consumed during archive period.                     |
+
+
 ## Starting WeeWX
 You're done installing and configuring the extension. You can start WeeWX either directly from the
 command line, or start it as a daemon. Instructions are in the WeeWX User's Guide, in the section
 [_Running WeeWX_](http://www.weewx.com/docs/usersguide.htm#running).
 
+## Observation types
+
+The driver can emit the following types
+
+| Type               | Python type | Meaning                            |
+|--------------------|-------------|------------------------------------|
+| `dateTime`         | `int`       | Timestamp in unix epoch time       |
+| `serial`           | `str`       | The unit serial number             |
+| `unit_id`          | `int`       | Unit identification number         |
+| `secs`             | `int`       | Continuous device uptime           |
+| `chNN_count`       | `int`       | Pulse count in channel `NN`        |
+| `chNN_volt`        | `float`     | Voltage in channel `NN`            |
+| `chNN_temperature` | `float`     | Temperature in channel `NN`        |
+| `chNN_amp`         | `float`     | Current (amperage) in channel `NN` |
+| `chNN_P_power`     | `float`     | Average power (see below).         |
+| `chNN_PD_energy2`  | `float`     | Energy (see  below)                |
+
+NB: the channel number uses no leading zero. For example, it is `ch2_volt`, NOT `ch02_volt`.
+
+
+### Energy and power
+
+Because energy and power can be either polarized or absolute, an additional character `P` is used. In addition,
+energy can mean either the accumulated energy since device reset, or just the energy over the archive interval.
+
+    chNN_PD_energy2
+    chNN_P_power
+
+| Character | Meaning                                                                                                                                                       |
+|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| NN        | Channel number. No leading zero is used.                                                                                                                      |
+| P         | Polarity , either `a` (absolute) or `p` (polarized).                                                                                                          |
+| D         | If the character `d` is present (not implemented), then the type represents energy used during the archive interval. Otherwise, it is the accumulated energy. |
+
+So, for example:
+- `ch14_p_energy2` would be the accumulated polarized energy in channel 14.
+- `ch2_a_energy2` would be the accumulated absolute energy in channel 2.
+- `ch2_ad_energy2` would be the absolute energy used during the archive interval in channel 2.

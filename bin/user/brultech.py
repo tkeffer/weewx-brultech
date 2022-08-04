@@ -160,15 +160,11 @@ class SocketConnection(BaseConnection):
     def __init__(self, host, port, send_delay=0.2, timeout=20):
         """Initialize a SocketConnection.
 
-        NAMED ARGUMENTS:
-
-        host: IP host. No default.
-
-        port: The socket to be used. No default.
-
-        send_delay: After sending a command, how long to wait before looking for a response.
-
-        timeout: How long to wait on a socket connection. Default is 20 seconds.
+        Args:
+            host (str): IP host. No default.
+            port (int): The socket to be used. No default.
+            send_delay (float): After sending a command, how long to wait before looking for a response.
+            timeout (float: How long to wait on a socket connection. Default is 20 seconds.
         """
         super(SocketConnection, self).__init__(send_delay)
         import socket
@@ -386,7 +382,7 @@ class GEMBin48Net(BTBase):
 
     def _extract_packet_from(self, byte_buf):
         packet = {
-            'dateTime': int(time.time() + 0.5),
+            'dateTime': time.time(),
             'usUnits': weewx.METRICWX,
             'ch1_volt': float(struct.unpack('>H', byte_buf[3:5])[0]) / 10.0,
             'ser_no': struct.unpack('>H', byte_buf[485:487])[0],
@@ -461,20 +457,16 @@ class Brultech(weewx.drivers.AbstractDevice):
     def __init__(self, **bt_dict):
         """Initialize from a config dictionary
 
-        NAMED ARGUMENTS:
-
-        packet_type: The class for the expected packet type. Default is GEMBin48NetTime.
-
-        connection: Type of connection. Default is 'socket'
-
-        poll_interval: How often to poll for data. Default is 5.
-
-        max_tries: The maximum number of tries that should be attempted in the event
-        of a read error. Default is 3.
+        Args:
+            packet_type (str): The class for the expected packet type. Default is 'GEMBin48NetTime'.
+            connection (str): Type of connection. Default is 'socket'
+            poll_interval (int): How often to poll for data. Default is 5.
+            max_tries(int): The maximum number of tries that should be attempted in the event
+                of a read error. Default is 3.
 
         # In addition, there should be a subdictionary with key matching 'connection'
         above. For example, for sockets:
-        socket: { 'host':  192.168.1.101, 'port': 8086, 'timeout': 20 }
+            socket (dict): { 'host':  192.168.1.101, 'port': 8086, 'timeout': 20 }
         """
 
         self.poll_interval = to_float(bt_dict.get('poll_interval', 5))
@@ -526,13 +518,14 @@ class Brultech(weewx.drivers.AbstractDevice):
             return packet['time_created']
         raise NotImplementedError
 
-    def setTime(self):
-        """Set the time"""
+    def setTime(self, t=None):
+        """Set the time to t"""
 
+        t = t or time.time()
         # Unfortunately, clock resolution is only 1 second, and transmission takes a
         # little while to complete, so round up the clock up. 0.5 for clock resolution
         # and 0.25 for transmission delay. Also, the Brultech uses UTC.
-        newtime_tt = time.gmtime(int(time.time() + 0.75))
+        newtime_tt = time.gmtime(int(t + 0.75))
         # Extract the year, month, etc.
         y, mo, d, h, mn, s = newtime_tt[0:6]
         # Year should be given modulo 2000
@@ -589,7 +582,43 @@ class BrultechConfigurator(weewx.drivers.AbstractConfigurator):
     @staticmethod
     def show_info(device, dest=sys.stdout):
         """Query the configuration of the Brultech, printing out status
-        information"""
+        information. Typical response (I think only through byte 319 is defined):
+            bytearray(b'ALL\r\n00,                             # Byte 0; Spare
+              40,40,40,40,40,40,C0,40,40,40,40,40,40,40,40,40, # Channel options ch 01-16
+              40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40, # Channel options ch 17-32
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Channel options ch 33-48
+              D3,D4,D3,D3,D3,D2,92,90,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 01-16
+              D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 17-32
+              D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 33-48
+              34,44,44,23,44,44,44,44,44,44,44,44,             # CT range ch 01-24 (one nibble per channel)
+              44,44,44,44,44,44,44,44,44,44,44,44,             # CT range ch 25-48 (one nibble per channel)
+              BB,03,                                           # Packet format, packet send interval
+              04,05,00,FF,1E,00,00,00,F3,FF,FF,FF,FF,FF,FF,FF, # Bytes 125-140
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 141-156
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 157-172
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 173-188
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 189-204
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 205-220
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 221-236
+              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FC,FF,A6,30,FF, # Bytes 237-252
+              EF,FF,FF,FF,FF,27,09,C6,18,25,A4,80,27,F9,20,DE, # Bytes 253-268
+              CD,04,BE,4E,88,84,4E,89,85,CD,04,BE,55,82,D6,40, # Bytes 269-284
+              9A,F1,26,14,AF,01,8B,89,74,77,69,73,70,65,00,E4, # Bytes 285-300
+              00,88,8A,26,E9,45,00,FF,80,00,00,00,00,00,00,FF, # Bytes 301-316
+              86,CD,03,20,CD,00,17,70,20,7F,A4,30,87,87,88,8A, # Bytes 317-332
+              81,AD,E6,82,45,C0,00,6E,FF,86,6E,00,87,CD,04,9F, # Bytes 333-348
+              CD,00,BE,6E,20,87,6E,FE,86,45,FF,BF,CD,04,9F,CD, # Bytes 349-364
+              04,00,CC,05,84,C6,FF,BF,A4,FC,B7,8A,45,FF,BF,35, # Bytes 365-380
+              82,00,00,01,35,FF,FF,00,FF,00,FF,08,FF,FF,61,00, # Bytes 381-396
+              20,61,6C,69,76,65,20,00,FF,00,00,00,00,00,00,00, # Bytes 397-412
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 413-428
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 429-444
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 445-460
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 461-476
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 477-492
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 493-508
+              00,00,00,09,09\r\n')                             # Bytes 509-513
+        """
 
         print("Querying...")
         info = device.get_info()
@@ -624,6 +653,7 @@ class BrultechConfEditor(weewx.drivers.AbstractConfEditor):
         settings['socket']['host'] = host
         settings['socket']['port'] = port
         return settings
+
 
 # ===============================================================================
 #                            Packet Utilities
@@ -676,6 +706,7 @@ def _mktemperature(b):
 volt_re = re.compile(r'^ch[0-9]+_volt$')
 temperature_re = re.compile(r'^ch[0-9]+_temperature$')
 energy2_re = re.compile(r'^ch[0-9]+(_[ap])?_energy2$')
+denergy2_re = re.compile(r'^ch[0-9]+(_[ap]d)?_energy2$')
 count_re = re.compile(r'^ch[0-9]+_count$')
 power_re = re.compile(r'^ch[0-9]+(_[ap])?_power$')
 
@@ -690,7 +721,7 @@ class BTAccumConfig(object):
     """
 
     def __getitem__(self, key):
-        global volt_re, temperature_re, energy2_re, count_re
+        global volt_re, temperature_re, energy2_re, denergy2_re, count_re
         if volt_re.match(key) or temperature_re.match(key):
             # These are intensive quantities. The defaults will do.
             return weewx.accum.OBS_DEFAULTS
@@ -698,6 +729,9 @@ class BTAccumConfig(object):
                 or key in ('time_created', 'secs', 'unit_id'):
             # These are extensive quantities. We need the last value (rather than the average).
             return {'extractor': 'last'}
+        elif denergy2_re.match(key):
+            # Delta energies are like rain: they have to be summed
+            return {'extractor': 'sum'}
         elif key == 'ser_no' or key == 'serial':
             # These are strings
             return {'accumulator': 'firstlast', 'extractor': 'last'}
@@ -707,11 +741,12 @@ class BTAccumConfig(object):
 
     def __contains__(self, key):
         """Does key match any type we know about?"""
-        global volt_re, temperature_re, energy2_re, count_re
+        global volt_re, temperature_re, energy2_re, denergy2_re, count_re
         return key in ('time_created', 'secs', 'unit_id', 'ser_no', 'serial') \
                or volt_re.match(key) \
                or temperature_re.match(key) \
                or energy2_re.match(key) \
+               or denergy2_re.match(key) \
                or count_re.match(key)
 
 
@@ -727,7 +762,7 @@ class BTObsGroupDict(object):
     """
 
     def __getitem__(self, key):
-        global volt_re, temperature_re, energy2_re, count_re, power_re
+        global volt_re, temperature_re, energy2_re, denergy2_re, count_re, power_re
         if key == 'time_created':
             return "group_time"
         elif key == 'secs':
@@ -735,6 +770,7 @@ class BTObsGroupDict(object):
         elif volt_re.match(key) \
                 or temperature_re.match(key) \
                 or energy2_re.match(key) \
+                or denergy2_re.match(key) \
                 or count_re.match(key) \
                 or power_re.match(key):
             # For these, the type can be inferred from the observation name.
@@ -748,82 +784,51 @@ class BTObsGroupDict(object):
             raise KeyError(key)
 
     def __contains__(self, key):
-        global volt_re, temperature_re, energy2_re, count_re, power_re
+        global volt_re, temperature_re, energy2_re, denergy2_re, count_re, power_re
         return key == 'time_created' \
                or key == 'secs' \
                or volt_re.match(key) \
                or temperature_re.match(key) \
                or energy2_re.match(key) \
+               or denergy2_re.match(key) \
                or count_re.match(key) \
                or power_re.match(key)
 
 
 class BTExtends(weewx.xtypes.XType):
-    """Extensions for the WeeWX extensible type system. It performs three functions:
-    1. Add power types to a packet. These are calculated from time differences of energy.
-    2. Calculate a scalar power from energy, using data in the database.
-    3. Calculate a series power from energy, using data in the database.
-    """
 
     def __init__(self, bt_dict):
         self.stale = to_int(bt_dict.get('stale', 1800))
-        self.derivatives = {}
         self.prev_record = None
 
-    def add_power_to_packet(self, packet):
-        """Calculate and add power for all energy channels that appear in a packet"""
-        global energy2_re
-        # Scan through the packet... (We will be changing the size of the packet, so we need to scan through
-        # a static list to avoid Python 3 errors).
-        for obs_type in list(packet.keys()):
-            # ... looking for energy keys that we recognize.
-            if energy2_re.match(obs_type):
-                # Have we seen this type before? If not, create a new TimeDerivative object for it
-                if obs_type not in self.derivatives:
-                    self.derivatives[obs_type] = weeutil.timediff.TimeDerivative(obs_type, self.stale)
-                # Add the packet to the TimeDerivative object, getting the derivative in return. If there isn't enough
-                # information to calculate the derivative, an exception may be raised. Be prepared to catch it.
-                try:
-                    deriv = self.derivatives[obs_type].add_record(packet)
-                    # Get the name for power. This will turn something like ch5_a_energy2 to ch5_a_power
-                    power_name = obs_type.replace('energy2', 'power')
-                    # Save it under that name
-                    packet[power_name] = deriv
-                except weewx.CannotCalculate:
-                    pass
-
-    def get_scalar(self, obs_type, record, db_manager):
+    def get_scalar(self, obs_type, record, db_manager, **option_dict):
         """Calculate a Brultech derived observation type.
 
-        This version only knows how to calculate power from energy2.
+        This version only knows how to calculate power from delta energy.
         """
 
-        # We only know how to calculate power. Ignore others.
         if not power_re.match(obs_type):
+            # Don't know what it is.
             raise weewx.UnknownType(obs_type)
 
-        # Get the corresponding energy name from the power name. This replaces something like ch5_a_power
-        # with ch5_a_energy2:
-        energy2_name = obs_type.replace('power', 'energy2')
+        # Get the corresponding "denergy2" name from the power name.
+        # This replaces something like ch5_a_power with ch5_ad_energy2:
+        denergy2_name = obs_type.replace('_power', 'd_energy2')
 
-        # We require that the energy value be in the record
-        if not record or energy2_name not in record:
+        # We require that both "interval" and the delta energy value be in the record:
+        if not record or "interval" not in record or denergy2_name not in record:
             raise weewx.CannotCalculate(obs_type)
 
-        prev_ts = record['dateTime'] - record['interval'] * 60
-        # See if we've cached a record with the right timestamp
-        if not self.prev_record or self.prev_record['dateTime'] != prev_ts:
-            # No. Go get it.
-            self.prev_record = db_manager.getRecord(prev_ts)
-
-        if record[energy2_name] is not None \
-                and self.prev_record \
-                and self.prev_record.get(energy2_name) is not None:
-            deriv = (record[energy2_name] - self.prev_record.get(energy2_name)) \
-                    / (record['dateTime'] - self.prev_record['dateTime'])
+        if record[denergy2_name] is not None:
+            val = record[denergy2_name] / (record['interval'] * 60)
         else:
-            deriv = None
-        return ValueTuple(deriv, 'watt', 'group_power')
+            val = None
+
+        # Figure out the unit and group of the desired observation type. Most likely, the result will
+        # be 'watt', 'group_power', but an explicit call makes this more future-proof.
+        unit, group = weewx.units.getStandardUnitType(record['usUnits'], obs_type)
+
+        return ValueTuple(val, unit, group)
 
     # This SQL statement uses an inner join to calculate the derivative over a time interval.
     SQL_TEMPLATE = "SELECT g1.dateTime, (g2.%(obs_type)s-g1.%(obs_type)s)/(g2.dateTime-g1.dateTime), " \
@@ -832,9 +837,12 @@ class BTExtends(weewx.xtypes.XType):
                    "WHERE g1.dateTime>%(start)s AND g1.dateTime<=%(stop)s;"
 
     @staticmethod
-    def get_series(obs_type, timespan, db_manager, aggregate_type=None, aggregate_interval=None):
-        """Return a series from the database"""
-        # We only know how to get series of power
+    def get_series(obs_type, timespan, db_manager, aggregate_type=None, aggregate_interval=None, **option_dict):
+        """Return a series from the database.
+
+        This version only knows how to calculate a series of power from energy2 with no aggregation.
+        """
+        # TODO: Calculate series of power from delta energies.
         if not power_re.match(obs_type):
             raise weewx.UnknownType(obs_type)
 
@@ -869,7 +877,11 @@ class BTExtends(weewx.xtypes.XType):
 
     @staticmethod
     def get_aggregate(obs_type, timespan, aggregate_type, db_manager, **option_dict):
+        """Calculate average power.
 
+        This version only knows how to calculate power from accumulated energy.
+        """
+        # TODO: Calculate avg power from delta energies
         # We only know how to get aggregates of power
         if not power_re.match(obs_type):
             raise weewx.UnknownType(obs_type)
@@ -891,6 +903,9 @@ class BrultechService(weewx.engine.StdService):
     def __init__(self, engine, config_dict):
         # Initialize my base class
         super(BrultechService, self).__init__(engine, config_dict)
+
+        self.prev_packet = None
+        self.prev_record = None
 
         # Start with the defaults. Make a copy --- we will be modifying it
         bt_config = configobj.ConfigObj(brultech_defaults)['Brultech']
@@ -914,9 +929,17 @@ class BrultechService(weewx.engine.StdService):
         weewx.xtypes.xtypes.append(self.bt_extends)
 
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
+        self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
     def new_loop_packet(self, event):
-        self.bt_extends.add_power_to_packet(event.packet)
+        augment_record(event.packet, self.prev_packet)
+        self.prev_packet = event.packet
+
+    def new_archive_record(self, event):
+        log.info("Channel 8 before: %s", event.record.get('ch8_ad_energy2'))
+        augment_record(event.record, self.prev_record)
+        log.info("Channel 8 after: %s", event.record.get('ch8_ad_energy2'))
+        self.prev_record = event.record
 
     def shutDown(self):
         """Remove the extensions that were added by __init__()"""
@@ -926,6 +949,78 @@ class BrultechService(weewx.engine.StdService):
         self.bt_accum_config = None
         self.bt_obs_group_dict = None
         self.bt_extends = None
+
+
+def augment_record(record, prev_record):
+    global energy2_re
+    if prev_record:
+        # Scan through the record... (We will be changing its size, so we need to scan through
+        # a static list to avoid Python 3 errors).
+        for obs_type in list(record.keys()):
+            # ... looking for energy keys that we recognize.
+            if energy2_re.match(obs_type):
+                # Found one. Use it to calculate power and delta energies
+                power_name = obs_type.replace('_energy2', '_power')
+                delta_name = obs_type.replace('_energy2', 'd_energy2')
+                # Be sure to convert to whatever unit system is in use in the record, then store
+                # just the ".value" part
+                if power_name not in record:
+                    record[power_name] = weewx.units.convertStd(calc_power(power_name, record, prev_record),
+                                                                record['usUnits']).value
+                if delta_name not in record:
+                    record[delta_name] = weewx.units.convertStd(calc_delta_energy(delta_name, record, prev_record),
+                                                                record['usUnits']).value
+
+
+def calc_power(power_name, record, prev_record):
+    """Given energy2, calculate power, which is just its time derivative.
+
+    Args:
+        power_name (str): The name of the desired power. Something like ch2_a_power
+        record (dict): A dictionary of types, holding present values.
+        prev_record (dict): A dictionary of types, holding previous values.
+
+    Returns:
+        ValueTuple: The time derivative of energy2
+    """
+    # Get the name of the field with accumulated energy
+    energy2_name = power_name.replace('_power', '_energy2')
+
+    if record[energy2_name] is not None \
+            and prev_record \
+            and prev_record.get(energy2_name) is not None:
+        deriv = (record[energy2_name] - prev_record.get(energy2_name)) \
+                / (record['dateTime'] - prev_record['dateTime'])
+    else:
+        deriv = None
+    unit, unit_group = weewx.units.getStandardUnitType(record['usUnits'], power_name)
+
+    return ValueTuple(deriv, unit, unit_group)
+
+
+def calc_delta_energy(delta_name, record, prev_record):
+    """Given energy2, calculate the change in energy from the last record
+
+    Args:
+        delta_name (str): The name of the desired delta energy observation type. Something like ch2_ad_energy2
+        record (dict): A dictionary of types, holding present values.
+        prev_record (dict): A dictionary of types, holding previous values.
+
+    Returns:
+        ValueTuple: The difference of energy2
+    """
+    # Get the name of the accumulated energy
+    energy2_name = delta_name.replace('d_energy2', '_energy2')
+
+    if record[energy2_name] is not None \
+            and prev_record \
+            and prev_record.get(energy2_name) is not None:
+        val = record[energy2_name] - prev_record.get(energy2_name)
+    else:
+        val = None
+    unit, unit_group = weewx.units.getStandardUnitType(record['usUnits'], delta_name)
+
+    return ValueTuple(val, unit, unit_group)
 
 
 if __name__ == '__main__':
