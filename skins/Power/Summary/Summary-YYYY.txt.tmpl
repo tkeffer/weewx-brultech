@@ -1,0 +1,30 @@
+#errorCatcher Echo
+#errorCatcher Echo
+#set $YM="%Y %m"
+#set $D=" %d"
+#set $M=" %b"
+#set $Time=" %H:%M"
+#set $NODAY=" N/A"
+#set $Energy="%8.1f"
+#set $Volume="%8.1f"
+#set $NONE="   N/A"
+                                                            SUMMARY OF POWER CONSUMPTION for $year_name
+
+NAME: $station.location
+ELEV: $station.altitude    LAT: $station.latitude[0]-$station.latitude[1] $station.latitude[2]    LONG: $station.longitude[0]-$station.longitude[1] $station.longitude[2]
+
+
+                                                                    ENERGY ($unit.label.ch8_ad_energy2.strip())
+
+MONTH    CH-1     CH-2     CH-3     CH-4     CH-5     CH-6     CH-7     CH-8     CH-9    CH-10    CH-11    CH-12    CH-13    CH-14    CH-15    CH-16
+----------------------------------------------------------------------------------------------------------------------------------------------------
+#for $month in $year.months
+#if $month.ch8_ad_energy2.has_data
+$month.dateTime.format($M) $month.ch1_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch2_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch3_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch4_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch5_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch6_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch7_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch8_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch9_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch10_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch11_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch12_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch13_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch14_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch15_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch16_ad_energy2.sum.nolabel($Energy,$NONE)
+#else
+$month.dateTime.format($M)
+#end if
+#end for
+----------------------------------------------------------------------------------------------------------------------------------------------------
+     $year.ch1_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch2_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch3_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch4_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch5_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch6_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch7_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch8_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch9_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch10_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch11_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch12_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch13_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch14_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch15_ad_energy2.sum.nolabel($Energy,$NONE) $year.ch16_ad_energy2.sum.nolabel($Energy,$NONE)
+
