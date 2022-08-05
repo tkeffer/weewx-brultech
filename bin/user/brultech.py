@@ -472,6 +472,7 @@ class Brultech(weewx.drivers.AbstractDevice):
 
         self.poll_interval = to_float(bt_dict.get('poll_interval', 5))
         self.max_tries = to_int(bt_dict.get('max_tries', 3))
+        self.max_channels = to_int(bt_dict.get('max_channels', 32))
         packet_type = bt_dict.get('packet_type', 'GEMBin48NetTime')
         connection_type = bt_dict.get('connection', 'socket')
         self.source = source_factory(connection_type, bt_dict)
@@ -538,8 +539,22 @@ class Brultech(weewx.drivers.AbstractDevice):
         log.debug("Set time to '%s'" % time_str)
 
     def get_info(self):
-        all = self.source.read_with_prompt(b'^^^RQSALL', None)
-        return all
+        """ Typical response through byte 124:
+            bytearray(b'ALL\r\n00,                             # Byte 0; Spare
+              40,40,40,40,40,40,C0,40,40,40,40,40,40,40,40,40, # Channel options ch 01-16
+              40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40, # Channel options ch 17-32
+              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Channel options ch 33-48
+              D3,D4,D3,D3,D3,D2,92,90,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 01-16
+              D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 17-32
+              D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 33-48
+              34,44,44,23,44,44,44,44,44,44,44,44,             # CT range ch 01-24 (one nibble per channel)
+              44,44,44,44,44,44,44,44,44,44,44,44,             # CT range ch 25-48 (one nibble per channel)
+              BB,03,                                           # PT type, PT range
+              04,05,                                           # Packet format, packet send interval
+              ...
+              """
+        response = self.source.read_with_prompt(b'^^^RQSALL', None)
+        return response
 
 
 def source_factory(source_name, bt_dict):
@@ -583,47 +598,64 @@ class BrultechConfigurator(weewx.drivers.AbstractConfigurator):
     @staticmethod
     def show_info(device, dest=sys.stdout):
         """Query the configuration of the Brultech, printing out status
-        information. Typical response (I think only through byte 319 is defined):
-            bytearray(b'ALL\r\n00,                             # Byte 0; Spare
-              40,40,40,40,40,40,C0,40,40,40,40,40,40,40,40,40, # Channel options ch 01-16
-              40,40,40,40,40,40,40,40,40,40,40,40,40,40,40,40, # Channel options ch 17-32
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Channel options ch 33-48
-              D3,D4,D3,D3,D3,D2,92,90,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 01-16
-              D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 17-32
-              D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3,D3, # CT type ch 33-48
-              34,44,44,23,44,44,44,44,44,44,44,44,             # CT range ch 01-24 (one nibble per channel)
-              44,44,44,44,44,44,44,44,44,44,44,44,             # CT range ch 25-48 (one nibble per channel)
-              BB,03,                                           # Packet format, packet send interval
-              04,05,00,FF,1E,00,00,00,F3,FF,FF,FF,FF,FF,FF,FF, # Bytes 125-140
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 141-156
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 157-172
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 173-188
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 189-204
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 205-220
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF, # Bytes 221-236
-              FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FF,FC,FF,A6,30,FF, # Bytes 237-252
-              EF,FF,FF,FF,FF,27,09,C6,18,25,A4,80,27,F9,20,DE, # Bytes 253-268
-              CD,04,BE,4E,88,84,4E,89,85,CD,04,BE,55,82,D6,40, # Bytes 269-284
-              9A,F1,26,14,AF,01,8B,89,74,77,69,73,70,65,00,E4, # Bytes 285-300
-              00,88,8A,26,E9,45,00,FF,80,00,00,00,00,00,00,FF, # Bytes 301-316
-              86,CD,03,20,CD,00,17,70,20,7F,A4,30,87,87,88,8A, # Bytes 317-332
-              81,AD,E6,82,45,C0,00,6E,FF,86,6E,00,87,CD,04,9F, # Bytes 333-348
-              CD,00,BE,6E,20,87,6E,FE,86,45,FF,BF,CD,04,9F,CD, # Bytes 349-364
-              04,00,CC,05,84,C6,FF,BF,A4,FC,B7,8A,45,FF,BF,35, # Bytes 365-380
-              82,00,00,01,35,FF,FF,00,FF,00,FF,08,FF,FF,61,00, # Bytes 381-396
-              20,61,6C,69,76,65,20,00,FF,00,00,00,00,00,00,00, # Bytes 397-412
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 413-428
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 429-444
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 445-460
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 461-476
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 477-492
-              00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00, # Bytes 493-508
-              00,00,00,09,09\r\n')                             # Bytes 509-513
+        information.
+
+        CT-model   CT-type   CT-range
+         M-40        211      4
+         M-50        210      4
+         M-80        210      4
+         M-100       212      3
+         S-30        205      4
+         S-60        180      4
+         S-100       146      3
+         S-200       144      2
+         S-400       146      1
+
+         Note how model M-50 and M-80 have the same CT-type and range. They cannot be distinguished from one another.
+         Models S-100 and S-400 have the same CT-type, but different ranges. They can be differentiated this way.
         """
 
+        CT_STR = {
+            180: "S-60",
+            205: "S-30",
+            210: "M-50/M-80",
+            211: "M-40",
+            212: "M-100",
+            144: "S-200",
+            146: "S-100"
+        }
         print("Querying...")
         info = device.get_info()
-        print(info, file=dest)
+        # First split on commas to get little bytearrays with the ascii values.
+        # Start at index 5 to get around the leading b"ALL\r\n"
+        val_bytelist = info[5:].split(b',')
+        # Now convert to ints, using base 16. The result will be a list of byte values
+        val_buf = [int(v, 16) for v in val_bytelist]
+
+        print("     Standard/           CT-        CT-   CT-")
+        print("Ch   Net        Polarity model      type  range")
+        for channel in range(1, device.max_channels + 1):
+            channel_options = val_buf[channel]
+            net_metering = 'Standard' if 0x40 & channel_options else 'Net'
+            polarity = '-' if bool(0x80 & channel_options) else '+'
+            ct_type = val_buf[48 + channel]
+            range_offset = channel // 2 + 97
+            range_nibble = channel % 2
+            ct_range = val_buf[range_offset] & 0x0f if range_nibble else (val_buf[range_offset] & 0xf0) >> 4
+            ct_model = CT_STR.get(ct_type, "Unk")
+            if ct_type == 146 and ct_range == 1:
+                ct_model = "S-400"
+            s = "%2d %10s   %1s        %-9s%5d %3d" % (channel, net_metering, polarity, ct_model, ct_type, ct_range)
+            print(s, file=dest)
+
+        pt_type = val_buf[121]
+        pt_range = val_buf[122]
+        packet_format = val_buf[123]
+        packet_interval = val_buf[124]
+        print("             PT-type: %d" % pt_type, file=dest)
+        print("            PT-range: %d" % pt_range, file=dest)
+        print("       Packet format: %d" %packet_format, file=dest)
+        print("Packet send interval: %ds" % packet_interval, file=dest)
 
 
 # =============================================================================
@@ -877,7 +909,7 @@ class BTExtends(weewx.xtypes.XType):
                 ValueTuple(data_vec, unit, unit_group))
 
     SQL_AGG_TEMPLATE = "SELECT SUM(%(energy_name)s) / (SUM(`interval`) * 60), MIN(usUnits), MAX(usUnits) " \
-                       "FROM %(table_name)s "\
+                       "FROM %(table_name)s " \
                        "WHERE dateTime > %(start)s AND dateTime <= %(stop)s " \
                        "AND %(energy_name)s IS NOT NULL;"
 
