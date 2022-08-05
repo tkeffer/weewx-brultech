@@ -7,8 +7,8 @@
 """ The default schema for the Brultech GEM. """
 
 # Reducing these parameters to the minimum you're likely to need can save considerable database space:
-MAX_CURRENT_CHANNELS = 16
-MAX_TEMPERATURE_CHANNELS = 4
+MAX_CURRENT_CHANNELS = 32
+MAX_TEMPERATURE_CHANNELS = 8
 MAX_PULSE_CHANNELS = 4
 INCLUDE_ACCUMULATED_ABSOLUTE = False
 INCLUDE_ACCUMULATED_POLARIZED = False

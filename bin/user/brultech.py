@@ -26,6 +26,7 @@ except ImportError:
 
 import configobj
 
+import weedb
 import weewx
 import weewx.accum
 import weewx.drivers
@@ -39,7 +40,7 @@ from weewx.units import ValueTuple
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '1.0.0'
+DRIVER_VERSION = '2.0.0'
 
 DEFAULTS_INI = u"""
 [Brultech]
@@ -830,11 +831,8 @@ class BTExtends(weewx.xtypes.XType):
 
         return ValueTuple(val, unit, group)
 
-    # This SQL statement uses an inner join to calculate the derivative over a time interval.
-    SQL_TEMPLATE = "SELECT g1.dateTime, (g2.%(obs_type)s-g1.%(obs_type)s)/(g2.dateTime-g1.dateTime), " \
-                   "g1.usUnits, g1.interval FROM archive g1 " \
-                   "INNER JOIN archive g2 ON g2.dateTime=g1.dateTime-g1.interval*60 " \
-                   "WHERE g1.dateTime>%(start)s AND g1.dateTime<=%(stop)s;"
+    SQL_SERIES_TEMPLATE = "SELECT dateTime, %(obs_type)s / (%(`interval`)s * 60.0), usUnits, `interval` " \
+                          "FROM %(table)s WHERE dateTime > %(start)s AND dateTime <= %(stop)s;"
 
     @staticmethod
     def get_series(obs_type, timespan, db_manager, aggregate_type=None, aggregate_interval=None, **option_dict):
@@ -842,13 +840,15 @@ class BTExtends(weewx.xtypes.XType):
 
         This version only knows how to calculate a series of power from energy2 with no aggregation.
         """
-        # TODO: Calculate series of power from delta energies.
+
+        # TODO: Allowing aggregation would make this whole thing much more efficient.
+
         if not power_re.match(obs_type):
             raise weewx.UnknownType(obs_type)
 
-        # Get the corresponding energy name from the power name. This replaces something like ch5_a_power
-        # with ch5_a_energy2:
-        energy2_name = obs_type.replace('power', 'energy2')
+        # Get the corresponding delta energy name from the power name. This replaces something like ch5_a_power
+        # with ch5_ad_energy2:
+        energy2_name = obs_type.replace('_power', 'd_energy2')
 
         start_vec = list()
         stop_vec = list()
@@ -858,7 +858,8 @@ class BTExtends(weewx.xtypes.XType):
             raise weewx.UnknownAggregation(aggregate_type)
         else:
             # No aggregation
-            sql_str = BTExtends.SQL_TEMPLATE % {'obs_type': energy2_name, 'start': timespan[0], 'stop': timespan[1]}
+            sql_str = BTExtends.SQL_SERIES_TEMPLATE % {'obs_type': energy2_name, 'table': db_manager.table_name,
+                                                       'start': timespan[0], 'stop': timespan[1]}
             std_unit_system = None
             for record in db_manager.genSql(sql_str):
                 start_vec.append(record[0] - record[3] * 60)
@@ -875,13 +876,18 @@ class BTExtends(weewx.xtypes.XType):
                 ValueTuple(stop_vec, 'unix_epoch', 'group_time'),
                 ValueTuple(data_vec, unit, unit_group))
 
+    SQL_AGG_TEMPLATE = "SELECT SUM(%(energy_name)s) / (SUM(`interval`) * 60), MIN(usUnits), MAX(usUnits) " \
+                       "FROM %(table_name)s "\
+                       "WHERE dateTime > %(start)s AND dateTime <= %(stop)s " \
+                       "AND %(energy_name)s IS NOT NULL;"
+
     @staticmethod
     def get_aggregate(obs_type, timespan, aggregate_type, db_manager, **option_dict):
         """Calculate average power.
 
-        This version only knows how to calculate power from accumulated energy.
+        This version only knows how to calculate average power from delta energy.
         """
-        # TODO: Calculate avg power from delta energies
+
         # We only know how to get aggregates of power
         if not power_re.match(obs_type):
             raise weewx.UnknownType(obs_type)
@@ -890,10 +896,34 @@ class BTExtends(weewx.xtypes.XType):
             raise weewx.UnknownAggregation(aggregate_type)
 
         # Get the corresponding energy name
-        energy_name = obs_type.replace('power', 'energy2')
+        energy_name = obs_type.replace('_power', 'd_energy2')
 
-        # The average power over the time period is just the time derivative of energy
-        return weewx.xtypes.get_aggregate(energy_name, timespan, 'tderiv', db_manager, **option_dict)
+        # Form the interpolation dictionary
+        interpolate_dict = {
+            'energy_name': energy_name,
+            'table_name': db_manager.table_name,
+            'start': timespan.start,
+            'stop': timespan.stop
+        }
+
+        select_stmt = BTExtends.SQL_AGG_TEMPLATE % interpolate_dict
+
+        try:
+            row = db_manager.getSql(select_stmt)
+        except weedb.NoColumnError:
+            raise weewx.UnknownType(aggregate_type)
+
+        if row is None or row[0] is None:
+            value = None
+        else:
+            if not (row[1] == row[2] == db_manager.std_unit_system):
+                raise weewx.UnsupportedFeature("Mixed unit systems")
+            value = row[0]
+
+        if db_manager.std_unit_system not in weewx.units.std_groups:
+            raise weewx.UnsupportedFeature("Brultech driver only support US, METRIC, and METRICWX unit systems")
+
+        return ValueTuple(value, "watt", "group_power")
 
 
 class BrultechService(weewx.engine.StdService):

@@ -15,12 +15,12 @@ ELEV: $station.altitude    LAT: $station.latitude[0]-$station.latitude[1] $stati
 DAY     CH-1     CH-2     CH-3     CH-4     CH-5     CH-6     CH-7     CH-8
 ---------------------------------------------------------------------------
 #for $day in $month.days
-#if $day.ch1_a_energy2.count.raw
-$day.dateTime.format($D) $day.ch1_a_energy2.diff.nolabel($Energy,$NONE) $day.ch2_a_energy2.diff.nolabel($Energy,$NONE) $day.ch3_a_energy2.diff.nolabel($Energy,$NONE) $day.ch4_a_energy2.diff.nolabel($Energy,$NONE) $day.ch5_a_energy2.diff.nolabel($Energy,$NONE) $day.ch6_a_energy2.diff.nolabel($Energy,$NONE) $day.ch7_a_energy2.diff.nolabel($Energy,$NONE) $day.ch8_a_energy2.diff.nolabel($Energy,$NONE)
+#if $day.ch1_ad_energy2.count.raw
+$day.dateTime.format($D) $day.ch1_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch2_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch3_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch4_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch5_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch6_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch7_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch8_ad_energy2.sum.nolabel($Energy,$NONE)
 #else
 $day.dateTime.format($D)
 #end if
 #end for
 ---------------------------------------------------------------------------
-    $month.ch1_a_energy2.diff.nolabel($Energy,$NONE) $month.ch2_a_energy2.diff.nolabel($Energy,$NONE) $month.ch3_a_energy2.diff.nolabel($Energy,$NONE) $month.ch4_a_energy2.diff.nolabel($Energy,$NONE) $month.ch5_a_energy2.diff.nolabel($Energy,$NONE) $month.ch6_a_energy2.diff.nolabel($Energy,$NONE) $month.ch7_a_energy2.diff.nolabel($Energy,$NONE) $month.ch8_a_energy2.diff.nolabel($Energy,$NONE)
+    $month.ch1_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch2_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch3_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch4_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch5_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch6_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch7_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch8_ad_energy2.sum.nolabel($Energy,$NONE)
 

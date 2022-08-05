@@ -1,0 +1,2 @@
+2.0 05-Aug-2022
+* Switch from storing accumulated energy, to delta energies
