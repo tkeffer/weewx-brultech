@@ -33,7 +33,7 @@ WITH archive_lag AS (SELECT dateTime as this_time,
                             LAG(%(energy_name)s) OVER (ORDER BY dateTime) as prev_val
                      FROM archive)
 UPDATE archive
-SET interval       = (SELECT ifnull((this_time - prev_time) / 60, 5)
+SET interval       = (SELECT ifnull((this_time - prev_time) / 60, interval)
                       FROM archive_lag
                       WHERE dateTime = archive_lag.this_time),
     %(delta_name)s = (SELECT (this_val - prev_val) 
