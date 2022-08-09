@@ -36,10 +36,11 @@ UPDATE archive
 SET interval       = (SELECT ifnull((this_time - prev_time) / 60, interval)
                       FROM archive_lag
                       WHERE dateTime = archive_lag.this_time),
-    %(delta_name)s = (SELECT (this_val - prev_val) 
+    %(delta_name)s = (SELECT iif((this_val - prev_val)>=0, (this_val - prev_val), null) 
                       FROM archive_lag 
                       WHERE dateTime = archive_lag.this_time) 
 """
+
 
 def main():
     parser = argparse.ArgumentParser(description=description,
