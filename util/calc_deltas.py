@@ -1,8 +1,11 @@
-"""Convert a version 1 style power database to a version 2 style.
+"""Augment a version 1 style energy database, which stores accumulated energies, with delta energies.
 
-Calculate "delta" energies from accumulated energies and add them to the archive.
+The WeeWX API must be in your PYTHONPATH. Generally, the following will work:
+
+PYTHONPATH=/home/weewx/bin python3 -m calc_deltas /path/to/SQLitedatabase
 """
 import argparse
+import re
 import sys
 import time
 
@@ -10,9 +13,9 @@ import weedb
 import weeutil.weeutil
 import weewx.manager
 
-import brultech
+energy2_re = re.compile(r'^ch[0-9]+(_[ap])?_energy2$')
 
-description = """Augment older-style weewx-brultech databases that stored only accumulated energy, to one
+description = """Augment older-style weewx-brultech databases, which stored only accumulated energy, to one
 that stores delta energies as well. 
 
 The accumulated energies will be left untouched. New columns with delta energies will be added. 
@@ -38,7 +41,6 @@ SET interval       = (SELECT ifnull((this_time - prev_time) / 60, 5)
                       WHERE dateTime = archive_lag.this_time) 
 """
 
-
 def main():
     parser = argparse.ArgumentParser(description=description,
                                      usage=usage,
@@ -58,7 +60,7 @@ def main():
                                                  'driver': 'weedb.sqlite'})
 
     # Find the names of all the accumulated energy fields. These will look like (for example) 'ch5_a_energy2'
-    energy_names = list(filter(lambda key: brultech.energy2_re.match(key), db_manager.obskeys))
+    energy_names = list(filter(lambda key: energy2_re.match(key), db_manager.obskeys))
 
     # Perform a natural sort before displaying
     energy_names.sort(key=weeutil.weeutil.natural_keys)
@@ -95,7 +97,7 @@ def main():
 
     t2 = time.time()
 
-    print("Finished adding %d new columns in %.2f seconds" % (len(energy_names), t2-t1))
+    print("Finished adding %d new columns in %.2f seconds" % (len(energy_names), t2 - t1))
 
 
 if __name__ == "__main__":
