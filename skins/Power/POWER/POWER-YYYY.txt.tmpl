@@ -1,0 +1,107 @@
+#errorCatcher Echo
+## The format to use for the date:
+#set $FMT_DATE=" %d"
+## The format to use for values:
+#set $FMT_ENERGY="%8.1f"
+#set $FMT_TEMPERATURE="%6.1f"
+#set $FMT_COUNT="%10.f"
+#set $FMT_LABEL="%9s"
+## The string to use for no value:
+#set $NONE_ENERGY="     N/A"
+#set $NONE_TEMPERATURE="   N/A"
+#set $NONE_COUNT="       N/A"
+#set $observations = $DisplayOptions.get('observations_stats', ['ch1_a_energy2'])
+#set $obs_energy = [$i for $i in $observations if $i.endswith('energy2')]
+#set $obs_temperature = [$i for $i in $observations if $i.endswith('temperature')]
+#set $obs_count = [$i for $i in $observations if $i.endswith('count')]
+ANNUAL report for $year_name
+
+NAME: $station.location
+ELEV: $station.altitude    LAT: $station.latitude[0]-$station.latitude[1] $station.latitude[2]    LONG: $station.longitude[0]-$station.longitude[1] $station.longitude[2]
+
+ENERGY ($unit.label.ch1_a_energy2.strip())
+
+MON#slurp
+#for $x in $obs_energy
+#if $getattr($year, $x).has_data
+      $x[0:$x.find('_')].upper()#slurp
+#end if
+#end for
+ 
+#for $month in $year.months
+$month.dateTime.format($FMT_DATE)#slurp
+#for $x in $obs_energy
+#if $getattr($month, $x).has_data
+ $getattr($month, $x).diff.nolabel($FMT_ENERGY,$NONE_ENERGY)#slurp
+#end if
+#end for
+ 
+#end for
+ YR#slurp
+#for $x in $obs_energy
+#if $getattr($year, $x).has_data
+ $getattr($year, $x).diff.nolabel($FMT_ENERGY,$NONE_ENERGY)#slurp
+#end if
+#end for
+
+
+
+COUNT
+
+MON#slurp
+#for $x in $obs_count
+#if $getattr($year, $x).has_data
+        $x[0:$x.find('_')].upper()#slurp
+#end if
+#end for
+ 
+#for $month in $year.months
+$month.dateTime.format($FMT_DATE)#slurp
+#for $x in $obs_count
+#if $getattr($month, $x).has_data
+ $getattr($month, $x).diff.nolabel($FMT_COUNT,$NONE_COUNT)#slurp
+#end if
+#end for
+
+#end for
+ YR#slurp
+#for $x in $obs_count
+#if $getattr($year, $x).has_data
+ $getattr($year, $x).diff.nolabel($FMT_COUNT,$NONE_COUNT)#slurp
+#end if
+#end for
+
+
+
+TEMPERATURE ($unit.label.ch1_temperature.strip())
+
+.  #slurp
+#for $x in $obs_temperature
+#if $getattr($year, $x).has_data
+    $x[0:$x.find('_')].upper()              #slurp
+#end if
+#end for
+ 
+MON#slurp
+#for $x in $obs_temperature
+#if $getattr($year, $x).has_data
+    AVG    MIN    MAX#slurp
+#end if
+#end for
+ 
+#for $month in $year.months
+$month.dateTime.format($FMT_DATE)#slurp
+#for $x in $obs_temperature
+#if $getattr($month, $x).has_data
+ $getattr($month, $x).avg.nolabel($FMT_TEMPERATURE,$NONE_TEMPERATURE) $getattr($month, $x).min.nolabel($FMT_TEMPERATURE,$NONE_TEMPERATURE) $getattr($month, $x).max.nolabel($FMT_TEMPERATURE,$NONE_TEMPERATURE)#slurp
+#end if
+#end for
+
+#end for
+ YR#slurp
+#for $x in $obs_temperature
+#if $getattr($year, $x).has_data
+ $getattr($year, $x).avg.nolabel($FMT_TEMPERATURE,$NONE_TEMPERATURE) $getattr($year, $x).min.nolabel($FMT_TEMPERATURE,$NONE_TEMPERATURE) $getattr($year, $x).max.nolabel($FMT_TEMPERATURE,$NONE_TEMPERATURE)#slurp
+#end if
+#end for
+
