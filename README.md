@@ -99,8 +99,8 @@ Download the `weewx-brultech` package and install it using the WeeWX installer:
 
 ```shell
 cd /home/weewx
-wget https://github.com/tkeffer/weewx-brultech/archive/refs/tags/V1.0.0.tar.gz
-./bin/wee_extension --install=V1.0.0.tar.gz
+wget https://github.com/tkeffer/weewx-brultech/archive/master.zip
+./bin/wee_extension --install=master.zip
 ```
 
 ### Configure
@@ -135,15 +135,15 @@ Download the `weewx-brultech` package and unpack it
 
 ```shell
 cd /home/weewx
-wget https://github.com/tkeffer/weewx-brultech/archive/refs/tags/V1.0.0.tar.gz
-tar xvf V1.0.0.tar.gz
+wget https://github.com/tkeffer/weewx-brultech/archive/master.zip
+tar xvf master.zip
 ```
 
 ### Copy files
 Put the files `brultech.py` and `gem_schema.py` in the `user` subdirectory. Typically,
 
 ```shell
-cd /home/weewx/weewx-brultech-1.0.0
+cd /home/weewx/weewx-brultech-master
 cp bin/user/brultech.py /home/weewx/bin/user
 cp bin/user/gem_schema.py /home/weewx/bin/user
 ```
