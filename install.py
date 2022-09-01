@@ -113,7 +113,8 @@ class WeepwrInstaller(ExtensionInstaller):
                      'skins/Power/index.html.tmpl',
                      'skins/Power/month.html.tmpl',
                      'skins/Power/skin.conf',
-                     'skins/Power/Summary-YYYY-MM.txt.tmpl',
+                     'skins/Power/Summary/Summary-YYYY.txt.tmpl',
+                     'skins/Power/Summary/Summary-YYYY-MM.txt.tmpl',
                      'skins/Power/week.html.tmpl',
                      'skins/Power/weewx.css',
                      'skins/Power/year.html.tmpl'])
