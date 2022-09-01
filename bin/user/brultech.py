@@ -998,9 +998,7 @@ class BrultechService(weewx.engine.StdService):
         self.prev_packet = event.packet
 
     def new_archive_record(self, event):
-        log.info("Channel 8 before: %s", event.record.get('ch8_ad_energy2'))
         augment_record(event.record, self.prev_record)
-        log.info("Channel 8 after: %s", event.record.get('ch8_ad_energy2'))
         self.prev_record = event.record
 
     def shutDown(self):
