@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+#
+#    Copyright (c) 2022 Tom Keffer <tkeffer@gmail.com>
+#
+#    See the file LICENSE.txt for your rights.
+#
 """Augment a version 1 style energy database, which stores accumulated energies, with delta energies.
 
 The WeeWX API must be in your PYTHONPATH. Generally, the following will work:

@@ -106,6 +106,8 @@ class WeepwrInstaller(ExtensionInstaller):
             files=[('bin/user',
                     ['bin/user/brultech.py',
                      'bin/user/gem_schema.py']),
+                   ('util/brultech',
+                    ['util/brultech/calc_deltas']),
                    ('skins/Power/backgrounds',
                     ['skins/Power/backgrounds/band.gif']),
                    ('skins/Power',
