@@ -81,7 +81,7 @@ BRULTECH_DEFAULTS = u"""
 
 [StdReport]
     [[PowerReport]]
-        skin = Power
+        skin = StandardPower
         enable = True
         data_binding = bt_binding                                    
         [[[Units]]]
@@ -108,18 +108,18 @@ class WeepwrInstaller(ExtensionInstaller):
                      'bin/user/gem_schema.py']),
                    ('util/brultech',
                     ['util/brultech/calc_deltas']),
-                   ('skins/Power/backgrounds',
-                    ['skins/Power/backgrounds/band.gif']),
-                   ('skins/Power',
-                    ['skins/Power/favicon.ico',
-                     'skins/Power/index.html.tmpl',
-                     'skins/Power/month.html.tmpl',
-                     'skins/Power/skin.conf',
-                     'skins/Power/Summary/Summary-YYYY.txt.tmpl',
-                     'skins/Power/Summary/Summary-YYYY-MM.txt.tmpl',
-                     'skins/Power/week.html.tmpl',
-                     'skins/Power/weewx.css',
-                     'skins/Power/year.html.tmpl'])
+                   ('skins/StandardPower/backgrounds',
+                    ['skins/StandardPower/backgrounds/band.gif']),
+                   ('skins/StandardPower',
+                    ['skins/StandardPower/favicon.ico',
+                     'skins/StandardPower/index.html.tmpl',
+                     'skins/StandardPower/month.html.tmpl',
+                     'skins/StandardPower/skin.conf',
+                     'skins/StandardPower/Summary/Summary-YYYY.txt.tmpl',
+                     'skins/StandardPower/Summary/Summary-YYYY-MM.txt.tmpl',
+                     'skins/StandardPower/week.html.tmpl',
+                     'skins/StandardPower/weewx.css',
+                     'skins/StandardPower/year.html.tmpl'])
                    ]
         )
 

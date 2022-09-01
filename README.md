@@ -148,9 +148,9 @@ cp bin/user/brultech.py /home/weewx/bin/user
 cp bin/user/gem_schema.py /home/weewx/bin/user
 ```
 
-Copy the `Power` skin over:
+Copy the `StandardPower` skin over:
 ```shell script
-cp -r skins/Power /home/weewx/skins
+cp -r skins/StandardPower /home/weewx/skins
 ```
 
 ### Configure `weewx.conf`
@@ -266,9 +266,9 @@ under section `[Station]`, to `Brultech`:
         data_binding = bt_binding         
    ```
    
-6. __Configure and activate the _Power_ skin__
+6. __Configure and activate the _StandardPower_ skin__
  
-   Add a subsection to `[StdReport]` for the _Power_ skin, and activate it by
+   Add a subsection to `[StdReport]` for the _StandardPower_ skin, and activate it by
    setting `enable` to `True`:
     
    ```ini
@@ -277,7 +277,7 @@ under section `[Station]`, to `Brultech`:
        ...
     
        [[PowerReport]]
-           skin = Power
+           skin = StandardPower
            enable = True
            data_binding = bt_binding
            [[[Units]]]
