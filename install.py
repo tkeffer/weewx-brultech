@@ -7,6 +7,8 @@
 
 from distutils.version import StrictVersion
 from io import StringIO
+import fnmatch
+import os
 
 import configobj
 
@@ -80,9 +82,17 @@ BRULTECH_DEFAULTS = u"""
         database_type = SQLite
 
 [StdReport]
-    [[PowerReport]]
-        skin = StandardPower
+    [[SeasonsPowerReport]]
+        skin = SeasonsPower
         enable = True
+        data_binding = bt_binding                                    
+        [[[Units]]]
+            [[[[Groups]]]]
+                group_energy2 = kilowatt_hour
+            
+    [[StandardPowerReport]]
+        skin = StandardPower
+        enable = False
         data_binding = bt_binding                                    
         [[[Units]]]
             [[[[Groups]]]]
@@ -104,23 +114,46 @@ class WeepwrInstaller(ExtensionInstaller):
             config=defaults_dict,
             data_services='user.brultech.BrultechService',
             files=[('bin/user',
-                    ['bin/user/brultech.py',
-                     'bin/user/gem_schema.py']),
-                   ('util/brultech',
-                    ['util/brultech/calc_deltas']),
-                   ('skins/StandardPower/backgrounds',
-                    ['skins/StandardPower/backgrounds/band.gif']),
+                    ['bin/user/gem_schema.py',
+                     'bin/user/brultech.py']),
                    ('skins/StandardPower',
-                    ['skins/StandardPower/favicon.ico',
-                     'skins/StandardPower/index.html.tmpl',
-                     'skins/StandardPower/month.html.tmpl',
-                     'skins/StandardPower/skin.conf',
-                     'skins/StandardPower/Summary/Summary-YYYY.txt.tmpl',
-                     'skins/StandardPower/Summary/Summary-YYYY-MM.txt.tmpl',
-                     'skins/StandardPower/week.html.tmpl',
+                    ['skins/StandardPower/skin.conf',
+                     'skins/StandardPower/year.html.tmpl',
                      'skins/StandardPower/weewx.css',
-                     'skins/StandardPower/year.html.tmpl'])
-                   ]
+                     'skins/StandardPower/week.html.tmpl',
+                     'skins/StandardPower/month.html.tmpl',
+                     'skins/StandardPower/index.html.tmpl',
+                     'skins/StandardPower/favicon.ico',
+                     'skins/StandardPower/backgrounds/band.gif',
+                     'skins/StandardPower/Summary/Summary-YYYY.txt.tmpl',
+                     'skins/StandardPower/Summary/Summary-YYYY-MM.txt.tmpl']),
+                   ('skins/SeasonsPower',
+                    ['skins/SeasonsPower/skin.conf',
+                     'skins/SeasonsPower/about.inc',
+                     'skins/SeasonsPower/identifier.inc',
+                     'skins/SeasonsPower/current.inc',
+                     'skins/SeasonsPower/index.html.tmpl',
+                     'skins/SeasonsPower/hilo.inc',
+                     'skins/SeasonsPower/titlebar.inc',
+                     'skins/SeasonsPower/power.js',
+                     'skins/SeasonsPower/rss.xml.tmpl',
+                     'skins/SeasonsPower/statistics.html.tmpl',
+                     'skins/SeasonsPower/power.css',
+                     'skins/SeasonsPower/statistics.inc',
+                     'skins/SeasonsPower/favicon.ico',
+                     'skins/SeasonsPower/tabular.html.tmpl',
+                     'skins/SeasonsPower/POWER/POWER-YYYY-MM.txt.tmpl',
+                     'skins/SeasonsPower/POWER/POWER-YYYY.txt.tmpl',
+                     'skins/SeasonsPower/font/Kanit-Bold.ttf',
+                     'skins/SeasonsPower/font/OpenSans-Regular.ttf',
+                     'skins/SeasonsPower/font/Kanit-Regular.ttf',
+                     'skins/SeasonsPower/font/OFL.txt',
+                     'skins/SeasonsPower/font/OpenSans.woff2',
+                     'skins/SeasonsPower/font/OpenSans.woff',
+                     'skins/SeasonsPower/font/license.txt',
+                     'skins/SeasonsPower/font/OpenSans-Bold.ttf',
+                     'skins/SeasonsPower/lang/en.conf']),
+            ]
         )
 
     def configure(self, engine):

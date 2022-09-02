@@ -1,3 +1,7 @@
-2.0 05-Aug-2022
+2.1.0 03-Sep-2022
+* Added Matthew's "Seasons" based skin.
+
+2.0.0 05-Aug-2022
 * Switch from storing accumulated energy, to delta energies
 * Improved output from wee_device --info query.
+
