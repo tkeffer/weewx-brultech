@@ -106,7 +106,7 @@ defaults_dict = configobj.ConfigObj(StringIO(BRULTECH_DEFAULTS), encoding='utf-8
 class WeepwrInstaller(ExtensionInstaller):
     def __init__(self):
         super(WeepwrInstaller, self).__init__(
-            version="2.0.0",
+            version="2.1.0",
             name='weewx-brultech',
             description='Extensions to the weewx weather system for Brultech energy monitors.',
             author="Thomas Keffer",

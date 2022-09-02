@@ -40,7 +40,7 @@ from weewx.units import ValueTuple
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '2.0.0'
+DRIVER_VERSION = '2.1.0'
 
 DEFAULTS_INI = u"""
 [Brultech]
