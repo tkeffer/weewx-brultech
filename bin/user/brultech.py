@@ -40,7 +40,7 @@ from weewx.units import ValueTuple
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '2.1.0'
+DRIVER_VERSION = '2.2.0'
 
 DEFAULTS_INI = u"""
 [Brultech]
@@ -73,7 +73,7 @@ DEFAULTS_INI = u"""
     # The following is for socket connections: 
     [[socket]]
         host = 192.168.1.104
-        port = 8083
+        port = 8000
         timeout = 20
         # After sending a command, how long to wait before looking for a response    
         send_delay = 0.2
@@ -1102,8 +1102,8 @@ if __name__ == '__main__':
     parser.add_option('--host', default='192.168.1.7',
                       help='Host. Default is "192.168.1.7"',
                       metavar="HOST")
-    parser.add_option('--port', type="int", default=8083,
-                      help='Serial port to use. Default is "8083"',
+    parser.add_option('--port', type="int", default=8000,
+                      help='Serial port to use. Default is "8000"',
                       metavar="PORT")
     (options, args) = parser.parse_args()
 

@@ -1,3 +1,8 @@
+##
+##    Copyright (c) 2021-2022 Tom Keffer <tkeffer@gmail.com>
+##
+##    See the file LICENSE.txt for your full rights.
+##
 #errorCatcher Echo
 ## The format to use for the date:
 #set $D=" %d"
@@ -16,11 +21,11 @@ DAY     CH-1     CH-2     CH-3     CH-4     CH-5     CH-6     CH-7     CH-8     
 ---------------------------------------------------------------------------------------------------------------------------------------------------
 #for $day in $month.days
 #if $day.ch1_ad_energy2.count.raw
-$day.dateTime.format($D) $day.ch1_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch2_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch3_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch4_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch5_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch6_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch7_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch8_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch9_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch10_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch11_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch12_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch13_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch14_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch15_ad_energy2.sum.nolabel($Energy,$NONE) $day.ch16_ad_energy2.sum.nolabel($Energy,$NONE)
+$day.dateTime.format($D) $day.ch1_a_energy2.diff.nolabel($Energy,$NONE) $day.ch2_a_energy2.diff.nolabel($Energy,$NONE) $day.ch3_a_energy2.diff.nolabel($Energy,$NONE) $day.ch4_a_energy2.diff.nolabel($Energy,$NONE) $day.ch5_a_energy2.diff.nolabel($Energy,$NONE) $day.ch6_a_energy2.diff.nolabel($Energy,$NONE) $day.ch7_a_energy2.diff.nolabel($Energy,$NONE) $day.ch8_a_energy2.diff.nolabel($Energy,$NONE) $day.ch9_a_energy2.diff.nolabel($Energy,$NONE) $day.ch10_a_energy2.diff.nolabel($Energy,$NONE) $day.ch11_a_energy2.diff.nolabel($Energy,$NONE) $day.ch12_a_energy2.diff.nolabel($Energy,$NONE) $day.ch13_a_energy2.diff.nolabel($Energy,$NONE) $day.ch14_a_energy2.diff.nolabel($Energy,$NONE) $day.ch15_a_energy2.diff.nolabel($Energy,$NONE) $day.ch16_a_energy2.diff.nolabel($Energy,$NONE)
 #else
 $day.dateTime.format($D)
 #end if
 #end for
 ---------------------------------------------------------------------------------------------------------------------------------------------------
-    $month.ch1_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch2_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch3_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch4_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch5_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch6_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch7_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch8_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch9_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch10_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch11_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch12_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch13_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch14_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch15_ad_energy2.sum.nolabel($Energy,$NONE) $month.ch16_ad_energy2.sum.nolabel($Energy,$NONE)
+    $month.ch1_a_energy2.diff.nolabel($Energy,$NONE) $month.ch2_a_energy2.diff.nolabel($Energy,$NONE) $month.ch3_a_energy2.diff.nolabel($Energy,$NONE) $month.ch4_a_energy2.diff.nolabel($Energy,$NONE) $month.ch5_a_energy2.diff.nolabel($Energy,$NONE) $month.ch6_a_energy2.diff.nolabel($Energy,$NONE) $month.ch7_a_energy2.diff.nolabel($Energy,$NONE) $month.ch8_a_energy2.diff.nolabel($Energy,$NONE) $month.ch9_a_energy2.diff.nolabel($Energy,$NONE) $month.ch10_a_energy2.diff.nolabel($Energy,$NONE) $month.ch11_a_energy2.diff.nolabel($Energy,$NONE) $month.ch12_a_energy2.diff.nolabel($Energy,$NONE) $month.ch13_a_energy2.diff.nolabel($Energy,$NONE) $month.ch14_a_energy2.diff.nolabel($Energy,$NONE) $month.ch15_a_energy2.diff.nolabel($Energy,$NONE) $month.ch16_a_energy2.diff.nolabel($Energy,$NONE)
 

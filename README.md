@@ -20,7 +20,7 @@ system.
   separate database from the conventional WeeWX weather database, allowing both to be run
   simultaneously. By default, it will include space for 32 channels.
 
-- A WeeWX skin, called _Power_, designed to display current, week, month, and year energy use. It
+- A WeeWX skin, called _SeasonsPower_, designed to display current, week, month, and year energy use. It
 also includes monthly energy summaries. It can easily be customized by following the directions
 in the _[WeeWX Customization Guide](http://www.weewx.com/docs/customizing.htm)_.
 
@@ -45,7 +45,7 @@ This makes it pretty easy to configure the device:
 1. Set the GEM to "server mode".
 Using a browser, connect to your GEM (http://192.168.1.104, in my case) 
 and go to the "Application Settings" page. 
-Set it to server mode, using port 8083:
+Set it to server mode, using port 8000:
 
     ![Application settings](images/server_mode.png)
 
@@ -118,12 +118,12 @@ for the Brultech driver:
 Specify the IP address (e.g., 192.168.0.10) or hostname of the Brultech monitor.
 host [192.168.1.104]: 192.168.0.7
 Specify the port
-port [8083]: 
+port [8000]: 
 Saved backup to /home/weewx/weewx.conf.20211025164234
 ```
 
 In this example, we have changed the host from `192.168.1.104` to `192.168.0.7`, but accepted
-the default port (`8083`).
+the default port (`8000`).
 
 ## Installing the extension manually
 
@@ -156,7 +156,7 @@ cp -r skins/StandardPower /home/weewx/skins
 ### Configure `weewx.conf`
 
 This section is about manually configuring the configuration file, `weewx.conf`, usually found
-in `/home/weewx/weeewx.conf`.
+in `/home/weewx/weewx.conf`.
 
 1. __Add section `[Brultech]`__
 
@@ -193,7 +193,7 @@ in `/home/weewx/weeewx.conf`.
         # The following is for socket connections: 
         [[socket]]
             host = 192.168.1.104
-            port = 8083
+            port = 8000
             timeout = 20
             # After sending a command, how long to wait before looking for a response    
             send_delay = 0.2
@@ -266,9 +266,9 @@ under section `[Station]`, to `Brultech`:
         data_binding = bt_binding         
    ```
    
-6. __Configure and activate the _StandardPower_ skin__
+6. __Configure and activate the _SeasonsPower_ skin__
  
-   Add a subsection to `[StdReport]` for the _StandardPower_ skin, and activate it by
+   Add a subsection to `[StdReport]` for the _SeasonsPower_ skin, and activate it by
    setting `enable` to `True`:
     
    ```ini
@@ -277,7 +277,7 @@ under section `[Station]`, to `Brultech`:
        ...
     
        [[PowerReport]]
-           skin = StandardPower
+           skin = SeasonsPower
            enable = True
            data_binding = bt_binding
            [[[Units]]]
@@ -320,8 +320,10 @@ a number of options. The defaults generally work well. Here are their meanings
 | `MAX_CURRENT_CHANNELS`          | `32`    | How many current channels to include in the schema. Max for GEM is 32.    |
 | `MAX_TEMPERATURE_CHANNELS`      | `8`     | How many temperature channels to include in the schema. Max for GEM is 8. |
 | `MAX_PULSE_CHANNELS`            | `4`     | How many pulse (counter) channels to include. Max for GEM is 4.           |
-| `INCLUDE_ACCUMULATED_ABSOLUTE`  | `False` | Store accumulated (since device reset) absolute energy.                   |
+| `INCLUDE_ACCUMULATED_ABSOLUTE`  | `True`  | Store accumulated (since device reset) absolute energy.                   |
 | `INCLUDE_ACCUMULATED_POLARIZED` | `False` | Store accumulated (since device reset) polarized energy.                  |
+| `INCLUDE_DELTA_ABSOLUTE`        | `True`  | Store delta absolute energy.                                              |
+| `INCLUDE_DELTA_POLARIZED`       | `False` | Store delta polarized energy.                                             |
 | `INCLUDE_POWER_ABSOLUTE`        | `False` | Store absolute power consumed during archive period.                      |
 | `INCLUDE_POWER_POLARIZED`       | `False` | Store polarized power consumed during archive period.                     |
 
@@ -354,7 +356,8 @@ NB: the channel number uses no leading zero. For example, it is `ch2_volt`, NOT 
 ### Energy and power
 
 Because energy and power can be either polarized or absolute, an additional character `P` is used. In addition,
-energy can mean either the accumulated energy since device reset, or just the energy over the archive interval.
+energy can mean either the accumulated energy since device reset, or just the energy over the archive interval
+(see below).
 
     chNN_PD_energy2
     chNN_P_power
@@ -369,3 +372,55 @@ So, for example:
 - `ch14_p_energy2` would be the accumulated polarized energy in channel 14.
 - `ch2_a_energy2` would be the accumulated absolute energy in channel 2.
 - `ch2_ad_energy2` would be the absolute energy used during the archive interval in channel 2.
+
+## Accumulated vs delta energy.
+
+### Accumulated
+
+The Brultech energy monitors emit *accumulated* energy in units of watt-seconds. Accumulated energy is the amount of
+energy that has flowed through the channel since the monitor was reset. Because a watt-second is a small amount of
+energy, and it may be years since your monitor was reset, this can often be a very large number. Fortunately, the
+Brultech monitors reserve five bytes for this value, so it can count up to over 300,000 kWh. A typical home might use
+10,000 kWh per year, so the value is unlikely to rollover for years.
+
+### Delta
+
+WeeWX uses accumulated energy to calculate *delta* energy, which is the amount of energy that flowed through the channel
+in an archive interval (typically 5 minutes). It is the *difference* in accumulated energy between the beginning and the
+end of the interval.
+
+### Calculations
+To calculate the amount of power used over, say, a month, you can either take the difference in accumulated
+energy, or you can sum the smaller delta energies for the month. Here's an example using channel 8:
+
+| Strategy                           | Tag                          |
+|------------------------------------|------------------------------|
+| Calculate using accumulated energy | `$month.ch8_a_energy2.diff`  |
+| Calculate using delta energy       | `$month.ch8_ad_energy2.sum`  |
+
+
+### Which to use?
+By default, both values are stored in the database. The skins that come with `weewx-brultech` use accumulated energy.
+
+They each have their advantages.
+
+#### Advantage accumulated energy
+
+The calculation is very efficient: only two numbers need be looked up in the database. By contrast, using delta energies
+requires summing all the records.
+
+If the computer running WeeWX goes down during the time period, but the energy monitor stays up, it won't affect the
+final result. This is because you only need the first and last value for the time period to calculate the total energy
+used.
+
+Of course, if the monitor goes down, you will miss energy used during that time period no matter which method you use.
+
+#### Advantage delta energy
+
+If you have technical problems with your monitor and must do a system reset, the counters will go to zero. This means
+that if you try to calculate total energy used over a period that includes the reset, and you do the calculation by
+calculating differences in accumulated energy, you will get a large negative number. By contrast, if you sum the
+delta energies, you will get the correct answer.
+
+The same thing can happen if the battery in you GEM fails. It is responsible for maintaining the count should the power
+fail.

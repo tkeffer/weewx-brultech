@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2021 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2021-2022 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -56,7 +56,7 @@ BRULTECH_DEFAULTS = u"""
     # The following is for socket connections: 
     [[socket]]
         host = 192.168.1.104
-        port = 8083
+        port = 8000
         timeout = 20
         # After sending a command, how long to wait before looking for a response    
         send_delay = 0.2
@@ -106,7 +106,7 @@ defaults_dict = configobj.ConfigObj(StringIO(BRULTECH_DEFAULTS), encoding='utf-8
 class WeepwrInstaller(ExtensionInstaller):
     def __init__(self):
         super(WeepwrInstaller, self).__init__(
-            version="2.1.0",
+            version="2.2.0",
             name='weewx-brultech',
             description='Extensions to the weewx weather system for Brultech energy monitors.',
             author="Thomas Keffer",

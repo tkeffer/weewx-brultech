@@ -1,5 +1,10 @@
+2.2.0 07-Sep-2022
+* Switched energy summaries back to using differences of accumulated energy.
+  This is more robust to power failure, although less robust to system reset. See the README.
+* Changed default port from 8083 to 8000
+
 2.1.0 03-Sep-2022
-* Added Matthew's "Seasons" based skin.
+* Added Matthew's "Seasons" based skin. Called it "SeasonsPower".
 
 2.0.0 05-Aug-2022
 * Switch from storing accumulated energy, to delta energies
