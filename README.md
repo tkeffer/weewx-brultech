@@ -309,10 +309,8 @@ under section `[Station]`, to `Brultech`:
 
 ## Select database options
 The default schema works well for most applications. However, you may want to tune it for special
-cases. 
-
-Take a look in the schema's file, usually located in `/home/weewx/bin/user/gem_schema.py`, and you will see
-a number of options. The defaults generally work well. Here are their meanings
+cases. Take a look in the schema's file, usually located in `/home/weewx/bin/user/gem_schema.py`, and you will see
+a number of options. Here are their meanings
 
 
 | Option                          | Default | Meaning                                                                   |
@@ -324,8 +322,8 @@ a number of options. The defaults generally work well. Here are their meanings
 | `INCLUDE_ACCUMULATED_POLARIZED` | `False` | Store accumulated (since device reset) polarized energy.                  |
 | `INCLUDE_DELTA_ABSOLUTE`        | `True`  | Store delta absolute energy.                                              |
 | `INCLUDE_DELTA_POLARIZED`       | `False` | Store delta polarized energy.                                             |
-| `INCLUDE_POWER_ABSOLUTE`        | `False` | Store absolute power consumed during archive period.                      |
-| `INCLUDE_POWER_POLARIZED`       | `False` | Store polarized power consumed during archive period.                     |
+| `INCLUDE_POWER_ABSOLUTE`        | `False` | Store the average absolute power consumed during archive period.          |
+| `INCLUDE_POWER_POLARIZED`       | `False` | Store the average polarized power consumed during archive period.         |
 
 
 ## Starting WeeWX
@@ -335,38 +333,27 @@ command line, or start it as a daemon. Instructions are in the WeeWX User's Guid
 
 ## Observation types
 
-The driver can emit the following types
+The driver can emit the following types:
 
-| Type               | Python type | Meaning                            |
-|--------------------|-------------|------------------------------------|
-| `dateTime`         | `int`       | Timestamp in unix epoch time       |
-| `serial`           | `str`       | The unit serial number             |
-| `unit_id`          | `int`       | Unit identification number         |
-| `secs`             | `int`       | Continuous device uptime           |
-| `chNN_count`       | `int`       | Pulse count in channel `NN`        |
-| `chNN_volt`        | `float`     | Voltage in channel `NN`            |
-| `chNN_temperature` | `float`     | Temperature in channel `NN`        |
-| `chNN_amp`         | `float`     | Current (amperage) in channel `NN` |
-| `chNN_P_power`     | `float`     | Average power (see below).         |
-| `chNN_PD_energy2`  | `float`     | Energy (see  below)                |
+| Type               | Python type | Meaning                                                    |
+|--------------------|-------------|------------------------------------------------------------|
+| `dateTime`         | `int`       | Timestamp in unix epoch time                               |
+| `serial`           | `str`       | The unit serial number                                     |
+| `unit_id`          | `int`       | Unit identification number                                 |
+| `secs`             | `int`       | Continuous device uptime                                   |
+| `chNN_count`       | `int`       | Pulse count in channel `NN`                                |
+| `chNN_volt`        | `float`     | Voltage in channel `NN`                                    |
+| `chNN_temperature` | `float`     | Temperature in channel `NN`                                |
+| `chNN_amp`         | `float`     | Current (amperage) in channel `NN`                         |
+| `chNN_a_power`     | `float`     | Average absolute power over an archive period (see below)  |
+| `chNN_p_power`     | `float`     | Average polarized power over an archive period (see below) |
+| `chNN_a_energy2`   | `float`     | Total accumulated absolute energy (see below)              |
+| `chNN_p_energy2`   | `float`     | Total accumulated polarized energy (see below)             |
+| `chNN_ad_energy2`  | `float`     | Absolute energy over an archive period (see below)         |
+| `chNN_pd_energy2`  | `float`     | Polarized energy over an archive period (see below)        |
 
-NB: the channel number uses no leading zero. For example, it is `ch2_volt`, NOT `ch02_volt`.
-
-
-### Energy and power
-
-Because energy and power can be either polarized or absolute, an additional character `P` is used. In addition,
-energy can mean either the accumulated energy since device reset, or just the energy over the archive interval
-(see below).
-
-    chNN_PD_energy2
-    chNN_P_power
-
-| Character | Meaning                                                                                                                                                       |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| NN        | Channel number. No leading zero is used.                                                                                                                      |
-| P         | Polarity , either `a` (absolute) or `p` (polarized).                                                                                                          |
-| D         | If the character `d` is present (not implemented), then the type represents energy used during the archive interval. Otherwise, it is the accumulated energy. |
+where `NN` is the channel number. NB: the channel number uses no leading zero. For example, it is `ch2_volt`, 
+NOT `ch02_volt`.
 
 So, for example:
 - `ch14_p_energy2` would be the accumulated polarized energy in channel 14.
@@ -422,5 +409,5 @@ that if you try to calculate total energy used over a period that includes the r
 calculating differences in accumulated energy, you will get a large negative number. By contrast, if you sum the
 delta energies, you will get the correct answer.
 
-The same thing can happen if the battery in you GEM fails. It is responsible for maintaining the count should the power
+The same thing can happen if the battery in your GEM fails. It is responsible for maintaining the count should the power
 fail.
