@@ -44,7 +44,7 @@ This makes it pretty easy to configure the device:
 
 1. Set the GEM to "server mode".
 Using a browser, connect to your GEM (http://192.168.1.104, in my case) 
-and go to the "Application Settings" page. 
+and go to the "Quick Configure" page, then select "Network Settings".
 Set it to server mode, using port 8000:
 
     ![Application settings](images/server_mode.png)
