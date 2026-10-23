@@ -287,13 +287,17 @@ under section `[Station]`, to `Brultech`:
    Incidentally, while you're in there, make sure that any "weather" skins have been deactivated 
    --- they won't work with the data from the energy monitor!
     
-8. __Make sure the configuration service runs__
+8. __Modify engine services__
  
     Because of its many specialized types, the Brultech driver requires setting up some custom
- configurations. This is done by the service `brultech.BrultechService`. You must
- add it to the list of services to run by adding it to `data_services`. So, now
- your `[Engine]` section looks something like this: 
- 
+    configurations. This is done by the service `brultech.BrultechService`. You must add it to the
+    list of services to run by adding it to `data_services`.
+    
+    You will also no longer need the many specialized services for a weather station. They can be
+    removed from the list of services.
+    
+    When you're done, the `[Engine]` section should look something like this: 
+     
     ```ini
     [Engine]
     
@@ -303,8 +307,11 @@ under section `[Station]`, to `Brultech`:
            # determines the order in which the services will be run.
            prep_services = weewx.engine.StdTimeSynch,
            data_services = user.brultech.BrultechService
-           process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC, weewx.wxservices.StdWXCalculate
-           ...
+           process_services = weewx.engine.StdConvert, weewx.engine.StdCalibrate, weewx.engine.StdQC
+           xtype_services = weewx.wxxtypes.StdDelta
+           archive_services = weewx.engine.StdArchive
+           restful_services = ,
+           report_services = weewx.engine.StdPrint, weewx.engine.StdReport
     ```
 
 ## Select database options
@@ -411,3 +418,9 @@ delta energies, you will get the correct answer.
 
 The same thing can happen if the battery in your GEM fails. It is responsible for maintaining the count should the power
 fail.
+
+# License & Copyright
+
+Copyright (c) 2026 Tom Keffer <tkeffer@gmail.com>
+
+See the file LICENSE.txt for your full rights.
