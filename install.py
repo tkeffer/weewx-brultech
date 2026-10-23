@@ -1,14 +1,11 @@
 #
-#    Copyright (c) 2021-2022 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2021-2026 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
 """Installer for weewx-brultech"""
 
-from distutils.version import StrictVersion
 from io import StringIO
-import fnmatch
-import os
 
 import configobj
 
@@ -16,16 +13,14 @@ import weewx
 from weecfg.extension import ExtensionInstaller
 
 REQUIRED_WEEWX = "4.2.0"
-if StrictVersion(weewx.__version__) < StrictVersion(REQUIRED_WEEWX):
-    raise weewx.UnsupportedFeature("weewx %s or greater is required, found %s"
-                                   % (REQUIRED_WEEWX, weewx.__version__))
+weewx.require_weewx_version('weewx-brultech', REQUIRED_WEEWX)
 
 
 def loader():
     return WeepwrInstaller()
 
 
-BRULTECH_DEFAULTS = u"""
+BRULTECH_DEFAULTS = """
 [Brultech]
 
     # See README.md for instructions on how to configure the Brultech devices!!

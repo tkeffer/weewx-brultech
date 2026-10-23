@@ -475,6 +475,11 @@ class Brultech(weewx.drivers.AbstractDevice):
         self.max_channels = to_int(bt_dict.get('max_channels', 32))
         packet_type = bt_dict.get('packet_type', 'GEMBin48NetTime')
         connection_type = bt_dict.get('connection', 'socket')
+        log.info(f"Connection type: {connection_type}")
+        log.info(f"Packet type: {packet_type}")
+        log.info(f"Max tries: {self.max_tries}")
+        log.info(f"Max channels: {self.max_channels}")
+        log.info(f"Poll interval: {self.poll_interval}")
         self.source = source_factory(connection_type, bt_dict)
         # Instantiate the packet class:
         self.packet_obj = globals()[packet_type](self.source, **bt_dict)
