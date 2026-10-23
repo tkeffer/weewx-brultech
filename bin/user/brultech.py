@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2013-2022 Tom Keffer <tkeffer@gmail.com>
+#    Copyright (c) 2013-2026 Tom Keffer <tkeffer@gmail.com>
 #
 #    See the file LICENSE.txt for your full rights.
 #
@@ -8,21 +8,14 @@
 A simplifying assumption is that the Brultech device is always in server mode,
 and the driver only polls it. See README.md for instructions on how to set up the device.
 """
-from __future__ import print_function, with_statement
-
 import calendar
+import io
 import logging
 import re
 import struct
 import sys
 import time
-
-try:
-    # Python 3
-    import io
-except ImportError:
-    # Python 2
-    import StringIO as io
+from urllib.parse import parse_qsl
 
 import configobj
 
@@ -33,14 +26,13 @@ import weewx.drivers
 import weewx.engine
 import weewx.units
 import weewx.xtypes
-import weeutil.timediff
 from weeutil.weeutil import to_int, to_float
 from weewx.units import ValueTuple
 
 log = logging.getLogger(__name__)
 
 DRIVER_NAME = 'Brultech'
-DRIVER_VERSION = '2.2.0'
+DRIVER_VERSION = '2.3.0'
 
 DEFAULTS_INI = u"""
 [Brultech]
@@ -50,7 +42,7 @@ DEFAULTS_INI = u"""
     # Power is computed as the difference between energy records. How old a 
     # record can be and still used for this calculation:
     stale = 1800
-    
+
     # How often to poll the device for data
     poll_interval = 10
 
@@ -64,7 +56,7 @@ DEFAULTS_INI = u"""
     # Max number of times to try an I/O operation before declaring an error
     max_tries = 3
     
-    driver = user.brultech.Brultech
+    driver = user.brultech
 
     # The type of connection to use. It should match a section below. 
     # Right now, only 'socket' is supported.
@@ -83,7 +75,6 @@ DEFAULTS_INI = u"""
 """
 
 brultech_defaults = configobj.ConfigObj(io.StringIO(DEFAULTS_INI))
-del io
 
 
 def loader(config_dict, engine):
@@ -238,7 +229,7 @@ class SocketConnection(BaseConnection):
             buf.extend(recv)
             if not chars:
                 break
-            remaining -= len(buf)
+            remaining = chars - len(buf)
         return buf
 
     def write(self, data):
@@ -332,16 +323,7 @@ class GEMAscii(BTBase):
         return packet
 
     def _extract_packet_from(self, byte_buf):
-        try:
-            # Python 3
-            # noinspection PyUnresolvedReferences
-            from urllib.parse import parse_qsl
-        except ImportError:
-            # Python 2
-            # noinspection PyUnresolvedReferences
-            from urlparse import parse_qsl
-
-        tuple_buf = parse_qsl(byte_buf)
+        tuple_buf = parse_qsl(bytes(byte_buf))
 
         packet = {}
         for obs_type, val in tuple_buf:
@@ -366,7 +348,7 @@ class GEMAscii(BTBase):
                 elif obs_generic == 'p':
                     packet['ch%d_count' % channel] = int(val)
                 else:
-                    log.debug('Unrecognized observation type', obs_type)
+                    log.debug('Unrecognized observation type %s', obs_type)
 
         return packet
 
@@ -835,10 +817,6 @@ class BTObsGroupDict(object):
 
 class BTExtends(weewx.xtypes.XType):
 
-    def __init__(self, bt_dict):
-        self.stale = to_int(bt_dict.get('stale', 1800))
-        self.prev_record = None
-
     def get_scalar(self, obs_type, record, db_manager, **option_dict):
         """Calculate a Brultech derived observation type.
 
@@ -868,7 +846,7 @@ class BTExtends(weewx.xtypes.XType):
 
         return ValueTuple(val, unit, group)
 
-    SQL_SERIES_TEMPLATE = "SELECT dateTime, %(obs_type)s / (%(`interval`)s * 60.0), usUnits, `interval` " \
+    SQL_SERIES_TEMPLATE = "SELECT dateTime, %(obs_type)s / (`interval` * 60.0), usUnits, `interval` " \
                           "FROM %(table)s WHERE dateTime > %(start)s AND dateTime <= %(stop)s;"
 
     @staticmethod
@@ -963,6 +941,34 @@ class BTExtends(weewx.xtypes.XType):
         return ValueTuple(value, "watt", "group_power")
 
 
+class BTEnergyDiff(weewx.xtypes.XType):
+    """Aggregate type 'diff' of accumulated energy, such as ``$month.ch2_a_energy2.diff``.
+
+    The 'diff' of the archive table is the last value up to the end of the time span, minus the
+    first value from its start on. If no record falls inside the span, say because the system was
+    down for a day, the last value comes from before the span and the first from after it. The
+    result is negative. This version returns None unless the span holds at least two records.
+    """
+
+    @staticmethod
+    def get_aggregate(obs_type, timespan, aggregate_type, db_manager, **option_dict):
+        if aggregate_type != 'diff':
+            raise weewx.UnknownAggregation(aggregate_type)
+        if not energy2_re.match(obs_type) or obs_type not in db_manager.sqlkeys:
+            raise weewx.UnknownType(obs_type)
+
+        select_stmt = "SELECT COUNT(*) FROM %s WHERE dateTime >= ? AND dateTime <= ?" \
+                      % db_manager.table_name
+        n_records = db_manager.getSql(select_stmt, (timespan.start, timespan.stop))[0]
+        if n_records < 2:
+            unit, group = weewx.units.getStandardUnitType(db_manager.std_unit_system, obs_type,
+                                                          aggregate_type)
+            return ValueTuple(None, unit, group)
+
+        return weewx.xtypes.ArchiveTable.get_aggregate(obs_type, timespan, aggregate_type,
+                                                       db_manager, **option_dict)
+
+
 class BrultechService(weewx.engine.StdService):
     """A WeeWX service that arranges for configuration information to be loaded. It also listens
     for NEW_LOOP_PACKET events, and uses them to fill out a packet with power information. """
@@ -978,11 +984,13 @@ class BrultechService(weewx.engine.StdService):
         bt_config = configobj.ConfigObj(brultech_defaults)['Brultech']
         # Now merge in the overrides from the config file
         bt_config.merge(config_dict.get('Brultech', {}))
+        self.stale = to_int(bt_config['stale'])
 
         # Create the specialized objects we will need:
         self.bt_accum_config = BTAccumConfig()
         self.bt_obs_group_dict = BTObsGroupDict()
-        self.bt_extends = BTExtends(bt_config)
+        self.bt_extends = BTExtends()
+        self.bt_energy_diff = BTEnergyDiff()
 
         # Now add them to their various services.
 
@@ -994,16 +1002,18 @@ class BrultechService(weewx.engine.StdService):
 
         # Add the extended types to the list of extensions
         weewx.xtypes.xtypes.append(self.bt_extends)
+        # This one must be inserted before `weewx.xtypes.ArchiveTable`
+        weewx.xtypes.xtypes.insert(0, self.bt_energy_diff)
 
         self.bind(weewx.NEW_LOOP_PACKET, self.new_loop_packet)
         self.bind(weewx.NEW_ARCHIVE_RECORD, self.new_archive_record)
 
     def new_loop_packet(self, event):
-        augment_record(event.packet, self.prev_packet)
+        augment_record(event.packet, self.prev_packet, self.stale)
         self.prev_packet = event.packet
 
     def new_archive_record(self, event):
-        augment_record(event.record, self.prev_record)
+        augment_record(event.record, self.prev_record, self.stale)
         self.prev_record = event.record
 
     def shutDown(self):
@@ -1011,13 +1021,26 @@ class BrultechService(weewx.engine.StdService):
         weewx.accum.accum_dict.maps.remove(self.bt_accum_config)
         weewx.units.obs_group_dict.maps.remove(self.bt_obs_group_dict)
         weewx.xtypes.xtypes.remove(self.bt_extends)
+        weewx.xtypes.xtypes.remove(self.bt_energy_diff)
         self.bt_accum_config = None
         self.bt_obs_group_dict = None
         self.bt_extends = None
+        self.bt_energy_diff = None
 
 
-def augment_record(record, prev_record):
+def augment_record(record, prev_record, stale=1800):
+    """Add power and delta energy to a record, calculated from its accumulated energy.
+
+    Args:
+        record (dict): The loop packet or archive record to be augmented, in place.
+        prev_record (dict|None): The record before it. None if there is none.
+        stale (int|float): If the previous record is more than this many seconds older than
+            this one, it is ignored. Otherwise, the energy used during a long gap, such as
+            when the device was unreachable, would be booked to a single record.
+    """
     global energy2_re
+    if prev_record and record['dateTime'] - prev_record['dateTime'] > stale:
+        prev_record = None
     if prev_record:
         # Scan through the record... (We will be changing its size, so we need to scan through
         # a static list to avoid Python 3 errors).

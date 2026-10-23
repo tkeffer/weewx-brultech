@@ -1,3 +1,10 @@
+2.3.0 23-Oct-2016
+* Several changes that were imported from the version in `weewx-packages`. Thanks, Manuel!
+    * Incorporated test suite from `weewx-packages`.
+    * Fixed bug that miscalculated the remaining number of bytes to read from a socket.
+    * More rigorous `diff` calculations of energy from accumulated energy.
+    * Removed Python 2 code
+
 2.2.0 07-Sep-2022
 * Switched energy summaries back to using differences of accumulated energy.
   This is more robust to power failure, although less robust to system reset. See the README.

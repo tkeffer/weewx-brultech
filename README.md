@@ -172,7 +172,7 @@ in `/home/weewx/weewx.conf`.
         stale = 1800
     
         # How often to poll the device for data
-        poll_interval = 5
+        poll_interval = 10
 
         # Max number of channels to emit. Limit is set by hardware (48 for GEM).
         max_channels = 32
@@ -276,7 +276,7 @@ under section `[Station]`, to `Brultech`:
     
        ...
     
-       [[PowerReport]]
+       [[SeasonsPowerReport]]
            skin = SeasonsPower
            enable = True
            data_binding = bt_binding
@@ -285,7 +285,7 @@ under section `[Station]`, to `Brultech`:
                    group_energy2 = kilowatt_hour
    ```
    Incidentally, while you're in there, make sure that any "weather" skins have been deactivated 
-   --- they won't work with the data from the energy monitor!
+   — they won't work with the data from the energy monitor!
     
 8. __Modify engine services__
  
